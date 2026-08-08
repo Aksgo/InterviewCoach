@@ -1,0 +1,176 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-heading: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --color-primary: oklch(0.5109 0.0861 186.39);
+  --color-on-primary: oklch(1.0 0 0);
+  --color-secondary: oklch(0.7038 0.123 182.5);
+  --color-accent: oklch(0.5 0.1193 242.75);
+  --color-background: oklch(0.9836 0.0142 180.72);
+  --color-foreground: oklch(0.3861 0.059 188.42);
+  --color-muted: oklch(0.95 0.0095 222.06);
+  --color-border: oklch(0.91 0.0927 180.43);
+  --color-destructive: oklch(0.5771 0.2152 27.33);
+  --color-ring: oklch(0.5109 0.0861 186.39);
+}
+
+/* ===== Global Styles ===== */
+body {
+  @apply bg-background text-foreground font-sans antialiased;
+}
+
+/* ===== Button Base ===== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition: all 0.2s ease-out;
+  cursor: pointer;
+}
+.btn:active {
+  transform: scale(0.97);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background-color: var(--color-accent);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition: all 0.2s ease-out;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.btn-primary:hover {
+  opacity: 0.9;
+}
+.btn-primary:active {
+  transform: scale(0.97);
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-secondary {
+  background-color: transparent;
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition: all 0.2s ease-out;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.btn-secondary:hover {
+  background-color: color-mix(in srgb, var(--color-primary) 5%, transparent);
+}
+.btn-secondary:active {
+  transform: scale(0.97);
+}
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-ghost {
+  background-color: transparent;
+  color: var(--color-foreground);
+  opacity: 0.7;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition: all 0.2s ease-out;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.btn-ghost:hover {
+  opacity: 1;
+  background-color: var(--color-muted);
+}
+.btn-ghost:active {
+  transform: scale(0.97);
+}
+
+/* ===== Card ===== */
+.card {
+  @apply bg-white rounded-xl p-6 shadow-[0_4px_6px_rgba(0,0,0,0.1)] border border-border/30;
+}
+
+/* ===== Input ===== */
+.input {
+  @apply w-full px-4 py-3 rounded-lg border border-border bg-white text-foreground font-sans
+         transition-colors duration-200 outline-none;
+}
+.input:focus {
+  @apply border-primary ring-3 ring-primary/20;
+}
+.input::placeholder {
+  @apply text-foreground/40;
+}
+
+/* ===== Label ===== */
+.label {
+  @apply block text-sm font-semibold text-foreground/80 mb-1.5;
+}
+
+/* ===== Animations ===== */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50%      { opacity: 1; transform: scale(1.3); }
+}
+@keyframes recording-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 oklch(0.5771 0.2152 27.33 / 0.4); }
+  50%      { box-shadow: 0 0 0 12px oklch(0.5771 0.2152 27.33 / 0); }
+}
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+.animate-slide-up {
+  animation: slideUp 0.5s ease-out forwards;
+}
+.animate-pulse-dot {
+  animation: pulse-dot 1.4s ease-in-out infinite;
+}
+.animate-recording {
+  animation: recording-pulse 1.5s ease-in-out infinite;
+}
+
+/* ===== Reduced Motion ===== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ===== Print Styles ===== */
+@media print {
+  .no-print { display: none !important; }
+  body { background: white !important; color: black !important; }
+}

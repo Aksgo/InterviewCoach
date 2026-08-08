@@ -1,0 +1,162 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { RotateCcw, Download, Sparkles, RefreshCw, Globe, ExternalLink } from "lucide-react";
+import EvaluationScorecard from "../components/EvaluationScorecard";
+import ResumeScorecard from "../components/ResumeScorecard";
+import { loadSession, saveSession, clearSession } from "../utils/storage";
+import type { InterviewSession } from "../utils/storage";
+import { downloadResultsAsPDF } from "../utils/pdf";
+
+export default function ResultsPage() {
+  const navigate = useNavigate();
+  const [session, setSession] = useState<InterviewSession | null>(null);
+
+  useEffect(() => {
+    const s = loadSession();
+    if (!s || s.status !== "completed") {
+      navigate("/", { replace: true });
+      return;
+    }
+    setSession(s);
+  }, [navigate]);
+
+  if (!session || !session.scores) {
+    return null;
+  }
+
+  const handleTryAgain = () => {
+    clearSession();
+    navigate("/");
+  };
+
+  const handleRetrySpecificQuestion = (index: number) => {
+    const updatedSession: InterviewSession = {
+      ...session,
+      currentQuestionIndex: index,
+      status: "in_progress",
+    };
+    saveSession(updatedSession);
+    navigate("/interview");
+  };
+
+  const handleDownloadPDF = () => {
+    downloadResultsAsPDF(session);
+  };
+
+  return (
+    <main className="max-w-2xl mx-auto px-4 py-8 min-h-[calc(100vh-4rem)] space-y-8">
+      {/* Header */}
+      <div className="text-center animate-fade-in">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-4">
+          <Sparkles className="w-3.5 h-3.5" />
+          Interview Complete
+        </div>
+        <h1 className="font-heading text-3xl font-extrabold text-foreground mb-2">
+          Your Performance Report
+        </h1>
+        <p className="text-foreground/60">
+          Target Position: <strong className="text-foreground">{session.role}</strong> at{" "}
+          <strong className="text-foreground">{session.company}</strong>
+        </p>
+      </div>
+
+      {/* Resume Score Match Breakdown */}
+      {session.resumeScore && (
+        <section className="animate-slide-up">
+          <ResumeScorecard
+            resumeScore={session.resumeScore}
+            company={session.company}
+            role={session.role}
+          />
+        </section>
+      )}
+
+      {/* Overall Interview Performance Scorecard */}
+      <section className="animate-slide-up">
+        <h2 className="text-lg font-bold text-foreground mb-3">Interview Delivery Scores</h2>
+        <EvaluationScorecard scores={session.scores} />
+      </section>
+
+      {/* Questions Review */}
+      <section className="animate-fade-in" style={{ animationDelay: "0.3s" }}>
+        <h2 className="text-lg font-bold text-foreground mb-4">Question Review & Retry</h2>
+        <div className="space-y-3">
+          {session.questions.map((q, i) => (
+            <div key={q.id} className="card p-4 animate-fade-in space-y-3" style={{ animationDelay: `${0.3 + i * 0.1}s` }}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground mb-1">
+                    <span className="text-primary">Q{i + 1}:</span> {q.text}
+                  </p>
+
+                  {/* Provenance badge */}
+                  <div className="flex items-center gap-2 my-1.5 flex-wrap">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200/80 text-[10px] font-semibold">
+                      <Globe className="w-3 h-3 text-blue-600 shrink-0" />
+                      <span>{q.sourceName || "Bright Data Web SERP"}</span>
+                    </span>
+                    {q.originExplanation && (
+                      <span className="text-[11px] text-foreground/60 italic">
+                        &bull; {q.originExplanation}
+                      </span>
+                    )}
+                    {q.sourceUrl && (
+                      <a
+                        href={q.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-primary hover:underline text-[10px] font-semibold ml-auto"
+                      >
+                        Source Link <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    )}
+                  </div>
+                  {q.answerTranscript ? (
+                    <p className="text-xs text-foreground/70 leading-relaxed mt-1 bg-muted/40 p-2.5 rounded-lg italic">
+                      "{q.answerTranscript}"
+                    </p>
+                  ) : (
+                    <p className="text-xs text-foreground/40 italic">No answer recorded</p>
+                  )}
+                  {q.feedback && (
+                    <p className="text-xs text-foreground/80 leading-relaxed mt-2">
+                      <strong className="text-foreground/60">Feedback:</strong> {q.feedback}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  {q.score !== undefined && (
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <span className="text-sm font-bold text-primary">{q.score}/10</span>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => handleRetrySpecificQuestion(i)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-secondary text-secondary-foreground text-xs font-semibold hover:bg-secondary/80 transition-colors cursor-pointer"
+                    title="Retry this specific question"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    Retry Q{i + 1}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Actions */}
+      <div className="flex items-center justify-center gap-3 no-print animate-fade-in" style={{ animationDelay: "0.6s" }}>
+        <button className="btn-secondary cursor-pointer" onClick={handleTryAgain}>
+          <RotateCcw className="w-4 h-4" />
+          Start New Practice
+        </button>
+        <button className="btn-primary cursor-pointer" onClick={handleDownloadPDF}>
+          <Download className="w-4 h-4" />
+          Download PDF Report
+        </button>
+      </div>
+    </main>
+  );
+}
