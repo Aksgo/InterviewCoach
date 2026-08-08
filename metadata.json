@@ -1,0 +1,6 @@
+{
+  "name": "AI Interview Coach",
+  "description": "Practice interviews with real-time AI feedback. Upload your resume, get tailored questions, and improve with scoring.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
