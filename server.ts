@@ -164,9 +164,8 @@ async function generateWithFallback(ai: GoogleGenAI, contents: string, config: a
   return null;
 }
 
-async function startServer() {
+export function createExpressApp() {
   const app = express();
-  const PORT = 3000;
 
   app.use(express.json());
 
@@ -1708,6 +1707,13 @@ Return ONLY a JSON object matching this exact schema:
     }
   });
 
+  return app;
+}
+
+async function startServer() {
+  const app = createExpressApp();
+  const PORT = 3000;
+
   // Vite middleware in dev mode
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
@@ -1728,4 +1734,6 @@ Return ONLY a JSON object matching this exact schema:
   });
 }
 
-startServer();
+if (!process.env.VERCEL) {
+  startServer();
+}
