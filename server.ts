@@ -180,7 +180,7 @@ export function createExpressApp() {
   });
 
   // /api/ai-status endpoint
-  app.get("/api/ai-status", (req, res) => {
+  app.get("/api/ai-status", (_req, res) => {
     const ai = getGeminiClient();
     const isRateLimited = globalQuotaExceeded || Object.values(modelStatusMap).every((m) => m.rateLimited);
 
@@ -257,7 +257,7 @@ export function createExpressApp() {
   // /api/google-ai-chat
   app.post("/api/google-ai-chat", async (req, res) => {
     try {
-      const { action, resumeText, role, company, question, answer, interviewTrack } = req.body || {};
+      const { action, resumeText, role, company, interviewTrack } = req.body || {};
 
       console.log(`\n==================================================`);
       console.log(`[API REQUEST LOG] /api/google-ai-chat | Action: "${action}" | Role: "${role}" | Company: "${company || 'N/A'}" | Track: "${interviewTrack || 'default/full'}"`);
@@ -1220,8 +1220,8 @@ Return ONLY a JSON object with this exact schema:
           feedback = "Your answer is extremely brief. Try expanding using the STAR method or providing code details.";
         } else {
           // 1. RELEVANCE
-          const qWords = (question || "").toLowerCase().split(/\s+/).filter(w => w.length > 3);
-          const matchedQWords = qWords.filter(w => lowerAnswer.includes(w)).length;
+          const qWords = (question || "").toLowerCase().split(/\s+/).filter((w: string) => w.length > 3);
+          const matchedQWords = qWords.filter((w: string) => lowerAnswer.includes(w)).length;
           const qRatio = qWords.length > 0 ? matchedQWords / qWords.length : 0.5;
           relevance = Math.min(10, Math.max(3, Math.round(5 + qRatio * 4 + (wordCount > 30 ? 1 : 0))));
 
@@ -1527,10 +1527,10 @@ Return ONLY a JSON object matching this exact schema:
         // Smart fallback logic
         const lowerResume = (resumeText || "").toLowerCase();
         const lowerRole = (role || "").toLowerCase();
-        const roleWords = lowerRole.split(/\s+/).filter((w) => w.length > 2);
+        const roleWords = lowerRole.split(/\s+/).filter((w: string) => w.length > 2);
 
         let matches = 0;
-        roleWords.forEach((word) => {
+        roleWords.forEach((word: string) => {
           if (lowerResume.includes(word)) matches++;
         });
 
@@ -1600,7 +1600,7 @@ Return ONLY a JSON object matching this exact schema:
   });
 
   // /api/speechmatics-token
-  app.post("/api/speechmatics-token", async (req, res) => {
+  app.post("/api/speechmatics-token", async (_req, res) => {
     try {
       console.log(`\n==================================================`);
       console.log(`[API REQUEST LOG] /api/speechmatics-token - Speechmatics Temporary RT Token requested`);
@@ -1724,7 +1724,7 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
-    app.get("*all", (req, res) => {
+    app.get("*all", (_req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
