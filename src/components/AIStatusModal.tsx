@@ -18,7 +18,7 @@ export default function AIStatusModal() {
 
   if (!isModalOpen) return null;
 
-  const models = serverStatus?.models || [
+  let models = serverStatus?.models || [
     { id: "gemini-3.6-flash", name: "Gemini 3.6 Flash", status: isQuotaExceeded ? "429 Rate Limited / Quota Reached" : "Active", isRateLimited: isQuotaExceeded },
     { id: "gemini-3.5-flash-lite", name: "Gemini 3.5 Flash Lite", status: isQuotaExceeded ? "429 Rate Limited / Quota Reached" : "Active", isRateLimited: isQuotaExceeded },
     { id: "gemini-3.1-flash-lite", name: "Gemini 3.1 Flash Lite", status: isQuotaExceeded ? "429 Rate Limited / Quota Reached" : "Active", isRateLimited: isQuotaExceeded },
@@ -30,6 +30,26 @@ export default function AIStatusModal() {
     { id: "gemini-1.5-pro", name: "Gemini 1.5 Pro", status: isQuotaExceeded ? "429 Rate Limited / Quota Reached" : "Active", isRateLimited: isQuotaExceeded },
     { id: "local-fallback", name: "Local Intelligence Engine", status: "100% Operational (Instant)", isRateLimited: false },
   ];
+
+  // Derive model status from the lastSource if Vercel serverless functions drop in-memory state
+  if (lastSource && totalAICalls > 0) {
+    const activeIndex = models.findIndex(m => lastSource.toLowerCase().includes(m.id.replace("gemini-", "")) || lastSource.toLowerCase().includes(m.name.toLowerCase()));
+    if (activeIndex > 0) {
+      models = models.map((m, idx) => {
+        if (idx < activeIndex) {
+          return { ...m, isRateLimited: true, status: "429 Rate Limited / Unavailable" };
+        }
+        return m;
+      });
+    } else if (activeIndex === -1 && (lastSource.includes("local") || lastSource.includes("fallback"))) {
+      models = models.map(m => {
+        if (m.id !== "local-fallback") {
+          return { ...m, isRateLimited: true, status: "429 Rate Limited / Unavailable" };
+        }
+        return m;
+      });
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in no-print">

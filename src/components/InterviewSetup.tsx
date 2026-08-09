@@ -88,7 +88,7 @@ export default function InterviewSetup({ company, role, experienceLevel, intervi
       <div>
         <label className="label" htmlFor="company">
           <Building2 className="w-4 h-4 inline mr-1.5 text-primary" />
-          Target Company
+          Target Company <span className="text-destructive ml-0.5">*</span>
         </label>
         <input
           id="company"
@@ -103,7 +103,7 @@ export default function InterviewSetup({ company, role, experienceLevel, intervi
         <div>
           <label className="label" htmlFor="role-select">
             <Briefcase className="w-4 h-4 inline mr-1.5 text-primary" />
-            Target Job Role
+            Target Job Role <span className="text-destructive ml-0.5">*</span>
           </label>
           <select
             id="role-select"
@@ -123,7 +123,7 @@ export default function InterviewSetup({ company, role, experienceLevel, intervi
         <div>
           <label className="label" htmlFor="experienceLevel">
             <GraduationCap className="w-4 h-4 inline mr-1.5 text-primary" />
-            Candidate Experience Level
+            Candidate Experience Level <span className="text-destructive ml-0.5">*</span>
           </label>
           <select
             id="experienceLevel"
@@ -144,7 +144,7 @@ export default function InterviewSetup({ company, role, experienceLevel, intervi
         <div className="animate-fade-in space-y-2">
           <label className="label" htmlFor="custom-role">
             <PenTool className="w-4 h-4 inline mr-1.5 text-primary animate-pulse" />
-            Specify Custom Job Role
+            Specify Custom Job Role <span className="text-destructive ml-0.5">*</span>
           </label>
           <input
             id="custom-role"
@@ -159,7 +159,7 @@ export default function InterviewSetup({ company, role, experienceLevel, intervi
       <div>
         <label className="label">
           <Layers className="w-4 h-4 inline mr-1.5 text-primary" />
-          Choose Interview Track
+          Choose Interview Track <span className="text-destructive ml-0.5">*</span>
         </label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1.5">
           {[

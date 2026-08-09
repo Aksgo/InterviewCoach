@@ -88,7 +88,10 @@ function isQuotaOrOverload(msg: string): boolean {
     lower.includes("high demand") ||
     lower.includes("overloaded") ||
     lower.includes("unavailable") ||
-    lower.includes("rate limit")
+    lower.includes("rate limit") ||
+    lower.includes("not found") ||
+    lower.includes("404") ||
+    lower.includes("400")
   );
 }
 

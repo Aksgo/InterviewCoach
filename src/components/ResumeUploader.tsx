@@ -84,7 +84,7 @@ export default function ResumeUploader({ onResumeText }: ResumeUploaderProps) {
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <label className="label mb-0">Upload Your Resume</label>
+        <label className="label mb-0">Upload Your Resume <span className="text-destructive ml-0.5">*</span></label>
         <button
           type="button"
           onClick={() => setShowManualText(!showManualText)}

@@ -3,6 +3,8 @@ import Header from "./components/Header";
 import HomePage from "./pages/HomePage";
 import InterviewPage from "./pages/InterviewPage";
 import ResultsPage from "./pages/ResultsPage";
+import PrivacyPage from "./pages/PrivacyPage";
+import TermsPage from "./pages/TermsPage";
 import { AIStatusProvider } from "./context/AIStatusContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import AIStatusModal from "./components/AIStatusModal";
@@ -18,6 +20,8 @@ export default function App() {
               <Route path="/" element={<HomePage />} />
               <Route path="/interview" element={<InterviewPage />} />
               <Route path="/results" element={<ResultsPage />} />
+              <Route path="/privacy" element={<PrivacyPage />} />
+              <Route path="/terms" element={<TermsPage />} />
             </Routes>
             <AIStatusModal />
           </div>

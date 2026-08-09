@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ArrowRight,
@@ -920,24 +920,22 @@ export default function HomePage() {
             <h4 className="text-[10px] font-extrabold uppercase tracking-wider text-foreground">Legal & Security</h4>
             <ul className="space-y-2 text-xs">
               <li>
-                <a
-                  href="/privacy"
-                  onClick={(e) => e.preventDefault()}
+                <Link
+                  to="/privacy"
                   className="text-foreground/60 hover:text-primary transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   <Shield className="w-3.5 h-3.5" />
                   <span>Privacy Policy</span>
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="/terms"
-                  onClick={(e) => e.preventDefault()}
+                <Link
+                  to="/terms"
                   className="text-foreground/60 hover:text-primary transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   <Scale className="w-3.5 h-3.5" />
                   <span>Terms of Service</span>
-                </a>
+                </Link>
               </li>
               <li>
                 <span className="text-foreground/40 flex items-center gap-1">
