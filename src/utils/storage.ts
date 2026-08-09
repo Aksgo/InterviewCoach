@@ -12,6 +12,9 @@ export interface InterviewSession {
   resumeText: string;
   company: string;
   role: string;
+  experienceLevel?: string;
+  candidateName?: string;
+  interviewTrack?: string;
   questions: InterviewQuestion[];
   currentQuestionIndex: number;
   status: "setup" | "in_progress" | "completed";
@@ -22,13 +25,27 @@ export interface InterviewSession {
   createdAt: string;
 }
 
+export type InterviewStage = "introduction" | "resume_deep_dive" | "core_technical_dsa" | "company_cultural_fit";
+
 export interface InterviewQuestion {
   id: string;
+  stage?: InterviewStage;
+  stageName?: string;
+  agentName?: string;
   text: string;
   answerTranscript?: string;
+  followUpQuestion?: string;
+  followUpAnswerTranscript?: string;
+  isProbed?: boolean;
   score?: number;
+  relevance?: number;
+  clarity?: number;
+  depth?: number;
+  confidence?: number;
   feedback?: string;
-  sourceType?: "brightdata_web_scraped" | "ai_generated_resume_tailored";
+  writtenCode?: string;
+  timeToAnswerSeconds?: number;
+  sourceType?: "web_grounded_scraped" | "ai_generated_resume_tailored";
   sourceName?: string;
   sourceUrl?: string;
   originExplanation?: string;
@@ -41,6 +58,8 @@ export interface ScoreData {
   confidence: number;
   overall: number;
   summary: string;
+  mistakes?: string[];
+  improvements?: string[];
 }
 
 const STORAGE_KEY = "ai-interview-coach-session";

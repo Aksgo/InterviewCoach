@@ -101,7 +101,7 @@ export default function ResumeUploader({ onResumeText }: ResumeUploaderProps) {
             onChange={(e) => handleManualTextChange(e.target.value)}
             placeholder="Paste your resume text here (experience, skills, projects)..."
             rows={5}
-            className="w-full rounded-xl border border-border p-3 text-sm text-foreground bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-y"
+            className="w-full rounded-xl border border-border p-3 text-sm text-foreground bg-card focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-y"
           />
           {resumeLoaded && (
             <p className="text-xs text-primary font-medium flex items-center gap-1">

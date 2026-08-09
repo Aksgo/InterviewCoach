@@ -4,21 +4,50 @@
 @theme {
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-heading: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --color-primary: oklch(0.5109 0.0861 186.39);
-  --color-on-primary: oklch(1.0 0 0);
-  --color-secondary: oklch(0.7038 0.123 182.5);
-  --color-accent: oklch(0.5 0.1193 242.75);
-  --color-background: oklch(0.9836 0.0142 180.72);
-  --color-foreground: oklch(0.3861 0.059 188.42);
-  --color-muted: oklch(0.95 0.0095 222.06);
-  --color-border: oklch(0.91 0.0927 180.43);
-  --color-destructive: oklch(0.5771 0.2152 27.33);
-  --color-ring: oklch(0.5109 0.0861 186.39);
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-ring: var(--ring);
+  --color-card: var(--card);
+}
+
+:root {
+  --primary: oklch(0.5109 0.0861 186.39);
+  --on-primary: oklch(1.0 0 0);
+  --secondary: oklch(0.7038 0.123 182.5);
+  --accent: oklch(0.5 0.1193 242.75);
+  --background: oklch(0.9836 0.0142 180.72);
+  --foreground: oklch(0.28 0.02 220);
+  --muted: oklch(0.95 0.0095 222.06);
+  --border: oklch(0.90 0.03 220);
+  --destructive: oklch(0.5771 0.2152 27.33);
+  --ring: oklch(0.5109 0.0861 186.39);
+  --card: oklch(1.0 0 0);
+}
+
+.dark {
+  --primary: oklch(0.65 0.11 186.39);
+  --on-primary: oklch(0.1 0 0);
+  --secondary: oklch(0.55 0.08 182.5);
+  --accent: oklch(0.68 0.15 242.75);
+  --background: oklch(0.13 0.012 220); /* Deep high-quality dark canvas */
+  --foreground: oklch(0.94 0.008 220); /* Crisp slate white */
+  --muted: oklch(0.18 0.01 220); /* Sophisticated darker panels */
+  --border: oklch(0.22 0.015 220); /* Clean subtle gridlines */
+  --destructive: oklch(0.62 0.21 27.33);
+  --ring: oklch(0.65 0.11 186.39);
+  --card: oklch(0.16 0.012 220); /* Container backgrounds */
 }
 
 /* ===== Global Styles ===== */
 body {
-  @apply bg-background text-foreground font-sans antialiased;
+  @apply bg-background text-foreground font-sans antialiased transition-colors duration-200;
 }
 
 /* ===== Button Base ===== */
@@ -110,12 +139,12 @@ body {
 
 /* ===== Card ===== */
 .card {
-  @apply bg-white rounded-xl p-6 shadow-[0_4px_6px_rgba(0,0,0,0.1)] border border-border/30;
+  @apply bg-card rounded-xl p-6 shadow-[0_4px_12px_rgba(0,0,0,0.03)] border border-border/80 transition-colors duration-200;
 }
 
 /* ===== Input ===== */
 .input {
-  @apply w-full px-4 py-3 rounded-lg border border-border bg-white text-foreground font-sans
+  @apply w-full px-4 py-3 rounded-lg border border-border bg-card text-foreground font-sans
          transition-colors duration-200 outline-none;
 }
 .input:focus {

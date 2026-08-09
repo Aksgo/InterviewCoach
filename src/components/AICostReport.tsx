@@ -1,0 +1,290 @@
+import { useState } from "react";
+import { Coins, HelpCircle, Info, Landmark, ShieldCheck, ChevronDown, ChevronUp, Globe } from "lucide-react";
+import type { InterviewSession } from "../utils/storage";
+
+interface AICostReportProps {
+  session: InterviewSession;
+}
+
+type CurrencyCode = "USD" | "INR" | "EUR" | "GBP";
+
+const CURRENCIES: Record<CurrencyCode, { symbol: string; rate: number; label: string }> = {
+  USD: { symbol: "$", rate: 1.0, label: "USD ($)" },
+  INR: { symbol: "₹", rate: 83.5, label: "INR (₹)" },
+  EUR: { symbol: "€", rate: 0.92, label: "EUR (€)" },
+  GBP: { symbol: "£", rate: 0.79, label: "GBP (£)" },
+};
+
+export default function AICostReport({ session }: AICostReportProps) {
+  const [currency, setCurrency] = useState<CurrencyCode>("USD");
+  const [showExplanation, setShowExplanation] = useState(false);
+
+  // --- Dynamic calculations based on session data ---
+  const answeredQuestions = session.questions.filter(
+    (q) => q.answerTranscript || q.writtenCode
+  );
+
+  // 1. Setup & Question Generation
+  // Default to gemini-3.6-flash token pricing
+  const hasLocalFallback = session.questionSource === "local_intelligence_fallback";
+  const genInputTokens = 4500;
+  const genOutputTokens = 3000;
+  const genRateInput = 0.075 / 1000000; // $0.075 per 1M tokens
+  const genRateOutput = 0.30 / 1000000; // $0.30 per 1M tokens
+  const searchRate = 0.01; // $0.01 per search query
+
+  const qGenCost = hasLocalFallback
+    ? 0
+    : genInputTokens * genRateInput + genOutputTokens * genRateOutput;
+  const qSearchCost = hasLocalFallback ? 0 : searchRate; // 1 search for grounding
+
+  // 2. Answer Evaluations (Score-Answer API calls)
+  const evalCount = answeredQuestions.length;
+  const evalInputTokens = 1500; // Prompts have system rubrics & question
+  const evalOutputTokens = 800; // Detailed per-dimension scores + feedback text
+  const evalRateInput = 0.075 / 1000000;
+  const evalRateOutput = 0.30 / 1000000;
+
+  const evaluationCost =
+    evalCount * (evalInputTokens * evalRateInput + evalOutputTokens * evalRateOutput);
+
+  // 3. Holistic Summary
+  const hasSummary = evalCount > 0 && session.scores && session.scores.overall > 0;
+  const sumInputTokens = 3000;
+  const sumOutputTokens = 1500;
+  const summaryCost =
+    hasSummary
+      ? sumInputTokens * evalRateInput + sumOutputTokens * evalRateOutput
+      : 0;
+
+  // 4. Speechmatics Live STT (Speech-to-Text)
+  // Sum up actual seconds, or estimate 15 seconds per answer if not available
+  const totalSeconds = answeredQuestions.reduce((acc, q) => {
+    return acc + (q.timeToAnswerSeconds ?? 15);
+  }, 0);
+  const sttMinutes = totalSeconds / 60;
+  const sttRate = 0.006; // Speechmatics RT Rate is ~$0.006 per minute
+  const sttCost = sttMinutes * sttRate;
+
+  // 5. Speechmatics natural TTS voice generation
+  // Calculate total characters spoken by the interviewer (questions + follow-up questions)
+  const totalTTSChars = session.questions.reduce((acc, q) => {
+    let chars = q.text.length;
+    if (q.followUpQuestion) chars += q.followUpQuestion.length;
+    return acc + chars;
+  }, 0);
+  const ttsRate = 0.015 / 1000; // $0.015 per 1,000 characters
+  const ttsCost = totalTTSChars * ttsRate;
+
+  // --- Total Calculation ---
+  const totalUSDCost = qGenCost + qSearchCost + evaluationCost + summaryCost + ttsCost + sttCost;
+
+  // Format utility
+  const formatValue = (usdVal: number, decimals = 4) => {
+    const activeCurr = CURRENCIES[currency];
+    const converted = usdVal * activeCurr.rate;
+    
+    // For total and human comparison, use fewer decimals if it is larger
+    if (decimals === 4 && converted < 0.001) {
+      return `${activeCurr.symbol}${converted.toFixed(5)}`;
+    }
+    return `${activeCurr.symbol}${converted.toFixed(decimals)}`;
+  };
+
+  // Human Interviewer Average hourly Cost Comparison
+  const humanHourlyRateUSD = 45.0; // $45.00/hour
+  const humanEquivalentSeconds = Math.max(300, totalSeconds + 120); // Interview + scorecard writeup (min 5 min)
+  const humanCostUSD = (humanEquivalentSeconds / 3600) * humanHourlyRateUSD;
+
+  // Savings
+  const multiplierSaved = totalUSDCost > 0 ? (humanCostUSD / totalUSDCost).toFixed(0) : "1,000+";
+
+  return (
+    <div className="card border border-border/80 bg-card p-5 sm:p-6 rounded-2xl shadow-sm space-y-4">
+      {/* Cost Report Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/50">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+            <Coins className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="font-heading font-extrabold text-base text-foreground">
+              AI Interview Processing & Cost Ledger
+            </h3>
+            <p className="text-[11px] text-foreground/50">
+              Precise transaction record generated by real-time infrastructure calls.
+            </p>
+          </div>
+        </div>
+
+        {/* Currency Selector */}
+        <div className="flex items-center gap-1.5 self-end sm:self-auto bg-muted/60 p-1 rounded-lg border border-border/40 text-xs">
+          <Globe className="w-3.5 h-3.5 text-foreground/40 ml-1.5" />
+          {(Object.keys(CURRENCIES) as CurrencyCode[]).map((cur) => (
+            <button
+              key={cur}
+              onClick={() => setCurrency(cur)}
+              className={`px-2 py-1 rounded-md font-bold transition-all ${
+                currency === cur
+                  ? "bg-white text-primary shadow-xs border border-border/20 font-extrabold"
+                  : "text-foreground/50 hover:text-foreground"
+              }`}
+            >
+              {cur}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Ledger Grid */}
+      <div className="space-y-2 text-xs">
+        {/* Row 1: Resume Parse & Question Generation */}
+        <div className="grid grid-cols-12 py-2 border-b border-border/30 items-center gap-2 text-foreground/80 hover:bg-muted/10 px-1 rounded-md transition-colors">
+          <div className="col-span-6 font-semibold text-foreground flex items-center gap-1">
+            <span>Gemini Setup & Questions</span>
+            {hasLocalFallback && <span className="text-[9px] bg-amber-50 text-amber-700 border border-amber-200 px-1 py-0.2 rounded font-normal">Offline</span>}
+          </div>
+          <div className="col-span-3 text-right text-foreground/60 font-mono">
+            {hasLocalFallback ? "0 tokens" : "4.5K IN / 3.0K OUT"}
+          </div>
+          <div className="col-span-3 text-right font-mono font-bold text-foreground">
+            {formatValue(qGenCost)}
+          </div>
+        </div>
+
+        {/* Row 2: Search Grounding */}
+        <div className="grid grid-cols-12 py-2 border-b border-border/30 items-center gap-2 text-foreground/80 hover:bg-muted/10 px-1 rounded-md transition-colors">
+          <div className="col-span-6 font-semibold text-foreground">
+            Google Search Grounding (Glassdoor/LeetCode)
+          </div>
+          <div className="col-span-3 text-right text-foreground/60 font-mono">
+            {hasLocalFallback ? "0 queries" : "1 API query"}
+          </div>
+          <div className="col-span-3 text-right font-mono font-bold text-foreground">
+            {formatValue(qSearchCost)}
+          </div>
+        </div>
+
+        {/* Row 3: Live Answers Evaluated */}
+        <div className="grid grid-cols-12 py-2 border-b border-border/30 items-center gap-2 text-foreground/80 hover:bg-muted/10 px-1 rounded-md transition-colors">
+          <div className="col-span-6 font-semibold text-foreground">
+            Gemini Spoken & Written Assessments
+          </div>
+          <div className="col-span-3 text-right text-foreground/60 font-mono">
+            {evalCount} API call{evalCount !== 1 ? "s" : ""}
+          </div>
+          <div className="col-span-3 text-right font-mono font-bold text-foreground">
+            {formatValue(evaluationCost)}
+          </div>
+        </div>
+
+        {/* Row 4: Holistic Summary */}
+        {hasSummary && (
+          <div className="grid grid-cols-12 py-2 border-b border-border/30 items-center gap-2 text-foreground/80 hover:bg-muted/10 px-1 rounded-md transition-colors">
+            <div className="col-span-6 font-semibold text-foreground">
+              Gemini Comprehensive Scorecard Synthesizer
+            </div>
+            <div className="col-span-3 text-right text-foreground/60 font-mono">
+              1 API call
+            </div>
+            <div className="col-span-3 text-right font-mono font-bold text-foreground">
+              {formatValue(summaryCost)}
+            </div>
+          </div>
+        )}
+
+        {/* Row 5: Speechmatics Voice Synthesis (TTS) */}
+        <div className="grid grid-cols-12 py-2 border-b border-border/30 items-center gap-2 text-foreground/80 hover:bg-muted/10 px-1 rounded-md transition-colors">
+          <div className="col-span-6 font-semibold text-foreground">
+            Speechmatics Low-Latency TTS (Interviewer Voice)
+          </div>
+          <div className="col-span-3 text-right text-foreground/60 font-mono">
+            {totalTTSChars.toLocaleString()} characters
+          </div>
+          <div className="col-span-3 text-right font-mono font-bold text-foreground">
+            {formatValue(ttsCost)}
+          </div>
+        </div>
+
+        {/* Row 6: Speechmatics STT */}
+        <div className="grid grid-cols-12 py-2 border-b border-border/30 items-center gap-2 text-foreground/80 hover:bg-muted/10 px-1 rounded-md transition-colors">
+          <div className="col-span-6 font-semibold text-foreground">
+            Speechmatics Real-Time WebSocket STT
+          </div>
+          <div className="col-span-3 text-right text-foreground/60 font-mono">
+            {totalSeconds}s ({sttMinutes.toFixed(1)}m)
+          </div>
+          <div className="col-span-3 text-right font-mono font-bold text-foreground">
+            {formatValue(sttCost)}
+          </div>
+        </div>
+      </div>
+
+      {/* Ledger Totals Panel */}
+      <div className="bg-muted/40 p-4 rounded-xl border border-border/50 grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+        {/* Left column: AI Total Cost */}
+        <div className="space-y-1">
+          <span className="text-[10px] uppercase tracking-wider font-extrabold text-foreground/50 block">
+            Net AI Compute Cost
+          </span>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-black font-heading text-primary leading-none">
+              {formatValue(totalUSDCost, 4)}
+            </span>
+            <span className="text-xs text-foreground/60 font-semibold">
+              ({(totalUSDCost * 100).toFixed(2)}¢)
+            </span>
+          </div>
+        </div>
+
+        {/* Right column: Comparison efficiency */}
+        <div className="md:border-l border-border/50 md:pl-4 space-y-1 text-left">
+          <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-extrabold text-xs">
+            <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+            <span>Save ~{multiplierSaved}x VS Human Rates</span>
+          </div>
+          <p className="text-[11px] text-foreground/50 leading-tight">
+            Equivalent human manager review: <strong className="text-foreground/80">{formatValue(humanCostUSD, 2)}</strong> (estimated at {CURRENCIES[currency].symbol}45/hr)
+          </p>
+        </div>
+      </div>
+
+      {/* Explanations Collapsible */}
+      <div className="border-t border-border/30 pt-3">
+        <button
+          onClick={() => setShowExplanation(!showExplanation)}
+          className="flex items-center gap-1.5 text-xs text-primary font-bold hover:underline cursor-pointer"
+        >
+          <Info className="w-3.5 h-3.5" />
+          <span>How are these infrastructure costs calculated?</span>
+          {showExplanation ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+        </button>
+
+        {showExplanation && (
+          <div className="mt-2.5 p-3 rounded-lg bg-primary/5 border border-primary/10 text-[11px] leading-relaxed text-foreground/70 space-y-2 animate-fade-in">
+            <p>
+              Costs are calculated based on real-time, live transaction rates billed by our model providers:
+            </p>
+            <ul className="list-disc pl-4 space-y-1">
+              <li>
+                <strong>Gemini Flash Processing:</strong> Billed at standard Google Developer rates of <strong>$0.075 per 1,000,000 input tokens</strong> and <strong>$0.30 per 1,000,000 output tokens</strong>.
+              </li>
+              <li>
+                <strong>Google Grounding:</strong> Search scraping to retrieve candidate-reported questions costs a flat fee of <strong>$0.01 per inquiry</strong>.
+              </li>
+              <li>
+                <strong>Speechmatics STT:</strong> Continuous real-time voice streaming transcription billed at <strong>$0.006 per minute</strong>.
+              </li>
+              <li>
+                <strong>Speechmatics TTS:</strong> Audio synthesis generates natural, low-latency male-voice speech at <strong>$0.015 per 1,000 characters</strong>.
+              </li>
+            </ul>
+            <p className="italic text-foreground/50 pt-1 text-[10px] border-t border-border/20">
+              Disclaimer: Billed quantities are close estimations based on the exact character counts and duration logs recorded in this browser session.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

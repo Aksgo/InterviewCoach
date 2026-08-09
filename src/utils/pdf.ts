@@ -40,11 +40,14 @@ export function downloadResultsAsPDF(session: InterviewSession): void {
   // Build an HTML document for printing
   const lines = questions.map(
     (q, i) =>
-      `<div style="margin-bottom:16px;">
+      `<div style="margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid #e2e8f0;">
         <strong style="color:#0F766E;">Q${i + 1}:</strong> ${escapeHtml(q.text)}
         <br/>
-        <strong style="color:#134E4A;">Your Answer:</strong> ${escapeHtml(q.answerTranscript || "No answer recorded")}
+        <strong style="color:#134E4A;">Your Answer:</strong> ${escapeHtml(q.answerTranscript || "No verbal answer recorded")}
+        ${q.writtenCode ? `<br/><strong style="color:#134E4A;">Written Code/Solution:</strong> <pre style="background:#f8fafc; border:1px solid #cbd5e1; padding:8px; border-radius:6px; font-family:monospace; font-size:12px; margin:4px 0;">${escapeHtml(q.writtenCode)}</pre>` : ""}
         <br/>
+        <strong style="color:#134E4A;">Time to Answer:</strong> ${q.timeToAnswerSeconds !== undefined ? `${q.timeToAnswerSeconds} seconds` : "N/A"}
+        &bull;
         <strong style="color:#134E4A;">Score:</strong> ${q.score ?? "—"}/10
         ${q.feedback ? `<br/><em style="color:#555;">${escapeHtml(q.feedback)}</em>` : ""}
       </div>`
@@ -80,7 +83,31 @@ export function downloadResultsAsPDF(session: InterviewSession): void {
     <div class="score-card"><div class="val">${scores.confidence}/10</div><div class="lbl">Confidence</div></div>
     <div class="score-card"><div class="val">${scores.overall}/10</div><div class="lbl">Overall</div></div>
   </div>
-  ${scores.summary ? `<div class="summary"><strong>Summary:</strong><br/>${escapeHtml(scores.summary)}</div>` : ""}
+  ${
+    scores.summary
+      ? `<div class="summary"><strong>Executive Performance Summary:</strong><br/>${escapeHtml(scores.summary)}</div>`
+      : ""
+  }
+  ${
+    scores.mistakes && scores.mistakes.length > 0
+      ? `<div style="background:#FFFBEB; border:1px solid #FDE68A; border-radius:8px; padding:12px 16px; margin-bottom:16px;">
+          <strong style="color:#92400E; font-size:14px;">Key Mistakes &amp; Weaknesses:</strong>
+          <ul style="margin:6px 0 0 0; padding-left:20px; font-size:13px; color:#78350F;">
+            ${scores.mistakes.map((m) => `<li style="margin-bottom:4px;">${escapeHtml(m)}</li>`).join("")}
+          </ul>
+        </div>`
+      : ""
+  }
+  ${
+    scores.improvements && scores.improvements.length > 0
+      ? `<div style="background:#ECFDF5; border:1px solid #A7F3D0; border-radius:8px; padding:12px 16px; margin-bottom:24px;">
+          <strong style="color:#065F46; font-size:14px;">Suggested Improvements:</strong>
+          <ul style="margin:6px 0 0 0; padding-left:20px; font-size:13px; color:#064E3B;">
+            ${scores.improvements.map((imp) => `<li style="margin-bottom:4px;">${escapeHtml(imp)}</li>`).join("")}
+          </ul>
+        </div>`
+      : ""
+  }
   <hr/>
   <h2>Questions &amp; Answers</h2>
   ${lines}

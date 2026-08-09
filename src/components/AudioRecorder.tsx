@@ -8,6 +8,7 @@ interface AudioRecorderProps {
   onTranscript: (text: string) => void;
   onRecordingChange: (recording: boolean) => void;
   disabled?: boolean;
+  autoStart?: boolean;
 }
 
 type MicState =
@@ -23,6 +24,7 @@ export default function AudioRecorder({
   onTranscript,
   onRecordingChange,
   disabled,
+  autoStart = false,
 }: AudioRecorderProps) {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -41,12 +43,15 @@ export default function AudioRecorder({
   const [microphoneAvailable, setMicrophoneAvailable] = useState<boolean | null>(null);
   const [livePreviewText, setLivePreviewText] = useState<string>("");
 
-  // Sync external text when NOT recording (e.g. when user edits text box manually)
+  // Sync external text when NOT recording or when currentText is cleared (e.g. after submit)
   useEffect(() => {
-    if (!isRecordingRef.current) {
+    if (!isRecordingRef.current || !currentText) {
       initialBaseTextRef.current = (currentText || "").trim();
       sessionFinalsRef.current = [];
       instanceInterimRef.current = "";
+      if (!currentText) {
+        setLivePreviewText("");
+      }
     }
   }, [currentText]);
 
@@ -146,7 +151,9 @@ export default function AudioRecorder({
           }
 
           instanceInterimRef.current = latestInterim;
-          setLivePreviewText(getFullSessionText());
+          const fullText = getFullSessionText();
+          setLivePreviewText(fullText);
+          onTranscript(fullText);
         };
 
         recognition.onerror = (e: any) => {
@@ -206,36 +213,45 @@ export default function AudioRecorder({
 
     const startingText = (currentText || "").trim();
     initialBaseTextRef.current = startingText;
+    sessionFinalsRef.current = [];
+    instanceInterimRef.current = "";
 
-    if (startBrowserSpeechRecognition(startingText)) {
-      return;
+    // PRIMARY ENGINE: Speechmatics API Realtime WebSocket STT
+    let token: string | null = null;
+    try {
+      const tokenRes = await getSpeechmaticsToken();
+      token = tokenRes.token || null;
+    } catch (err) {
+      console.warn("Speechmatics token fetch failed, checking browser fallback:", err);
+      token = null;
     }
 
-    // Fallback to Speechmatics WebSocket if Web Speech API is not available
-    try {
-      let token: string | null = null;
-      try {
-        const tokenRes = await getSpeechmaticsToken();
-        token = tokenRes.token;
-      } catch {
-        token = null;
-      }
-
-      if (!token || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setMicState({
-          status: "unsupported",
-          message: "Speech recognition is not supported in this browser. Please type your answer directly in the box above.",
-        });
-        onRecordingChange(false);
+    if (!token) {
+      // Fallback to browser built-in Web Speech API if Speechmatics token unavailable
+      console.log("Speechmatics API key not configured or token failed. Falling back to browser Speech Recognition...");
+      if (startBrowserSpeechRecognition(startingText)) {
         return;
       }
 
+      let msg = "Speech recognition is not supported in this browser. Please type your answer directly in the box above.";
+      if (window.isSecureContext === false) {
+        msg = "Microphone access is blocked because you are not on a secure context. Please access the site via http://localhost:3000 or HTTPS.";
+      } else {
+        msg = "SPEECHMATICS_API_KEY is not set in your .env file, and your browser does not support Web Speech API. Please add SPEECHMATICS_API_KEY or use Google Chrome.";
+      }
+
+      setMicState({
+        status: "unsupported",
+        message: msg,
+      });
+      onRecordingChange(false);
+      return;
+    }
+
+    try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
-      initialBaseTextRef.current = startingText;
-      sessionFinalsRef.current = [];
-      instanceInterimRef.current = "";
       setLivePreviewText(startingText);
 
       const ws = new WebSocket(`wss://eu.rt.speechmatics.com/v2?jwt=${token}`);
@@ -244,6 +260,7 @@ export default function AudioRecorder({
 
       ws.onopen = () => {
         wsOpened = true;
+        console.log("[Speechmatics Realtime STT] WebSocket connected. Sending StartRecognition config...");
         const startMsg = {
           message: "StartRecognition",
           transcription_config: { language: "en", enable_partials: true, max_delay: 1 },
@@ -270,30 +287,55 @@ export default function AudioRecorder({
         onRecordingChange(true);
       };
 
+      const parseSpeechmaticsResults = (results: any[]): string => {
+        if (!Array.isArray(results) || results.length === 0) return "";
+        let text = "";
+        for (const item of results) {
+          const word = item.alternatives?.[0]?.content || "";
+          if (!word) continue;
+          if (item.type === "punctuation" || word === "." || word === "," || word === "?" || word === "!") {
+            text += word;
+          } else {
+            text += (text ? " " : "") + word;
+          }
+        }
+        return text.trim();
+      };
+
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
           if (data.message === "AddTranscript") {
-            const text = data.results?.map((r: any) => r.alternatives?.[0]?.content || "").join(" ").trim();
-            if (text) {
-              if (data.is_final) {
-                sessionFinalsRef.current.push(text);
-                instanceInterimRef.current = "";
-              } else {
-                instanceInterimRef.current = text;
-              }
-              setLivePreviewText(getFullSessionText());
+            const finalText = parseSpeechmaticsResults(data.results);
+            if (finalText) {
+              sessionFinalsRef.current.push(finalText);
+              instanceInterimRef.current = "";
             }
+            const fullText = getFullSessionText();
+            setLivePreviewText(fullText);
+            onTranscript(fullText);
+          } else if (data.message === "AddPartialTranscript") {
+            const partialText = parseSpeechmaticsResults(data.results);
+            instanceInterimRef.current = partialText;
+            const fullText = getFullSessionText();
+            setLivePreviewText(fullText);
+            onTranscript(fullText);
           }
-        } catch {}
+        } catch (e) {
+          console.warn("Failed to parse Speechmatics WS message:", e);
+        }
       };
 
       ws.onerror = (err) => {
         console.warn("Speechmatics WS error:", err);
         if (!wsOpened) {
+          // If Speechmatics fails on open, try browser fallback as safety backup
+          if (startBrowserSpeechRecognition(startingText)) {
+            return;
+          }
           setMicState({
             status: "error",
-            message: "Unable to connect to live speech recognition server. Please try again or type directly.",
+            message: "Unable to connect to Speechmatics speech recognition server. Please check SPEECHMATICS_API_KEY in .env.",
           });
           onRecordingChange(false);
           cleanup();
@@ -305,13 +347,9 @@ export default function AudioRecorder({
       };
     } catch (err: any) {
       console.error("Failed to start recording:", err);
-      let message = "Could not access microphone. Please ensure microphone permissions are granted or type your answer below.";
+      let message = "Could not access microphone. Please ensure microphone permissions are granted.";
       if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
-        message = "Microphone access was denied. Please allow microphone permissions in your browser address bar settings, or type your answer directly.";
-      } else if (err?.name === "NotFoundError" || err?.name === "DevicesNotFoundError") {
-        message = "No microphone hardware found on your device. You can type your answer in the text box below.";
-      } else if (err?.name === "NotReadableError" || err?.name === "TrackStartError") {
-        message = "Microphone is currently in use by another application or blocked. Please check your system settings or type your answer.";
+        message = "Microphone access was denied. Please allow microphone permissions in your browser address bar settings.";
       }
       setMicState({
         status: "error",
@@ -319,7 +357,7 @@ export default function AudioRecorder({
       });
       onRecordingChange(false);
     }
-  }, [cleanup, currentText, getFullSessionText, onRecordingChange, startBrowserSpeechRecognition]);
+  }, [cleanup, currentText, getFullSessionText, onRecordingChange, onTranscript, startBrowserSpeechRecognition]);
 
   const stopRecording = useCallback(() => {
     isRecordingRef.current = false;
@@ -373,15 +411,22 @@ export default function AudioRecorder({
     return () => cleanup();
   }, [cleanup]);
 
+  // Handle autoStart prop
+  useEffect(() => {
+    if (autoStart && !disabled && !isRecordingRef.current && micState.status === "idle") {
+      startRecording();
+    }
+  }, [autoStart, disabled, micState.status, startRecording]);
+
   const isMicUnsupported = microphoneAvailable === false;
   const hasError = micState.status === "error" || micState.status === "unsupported";
 
   return (
     <div className="flex flex-col items-center gap-3">
       {micState.status === "connecting" ? (
-        <div className="flex items-center gap-2 text-foreground/60">
-          <Loader2 className="w-5 h-5 animate-spin" />
-          <span className="text-sm">Connecting to speech recognition...</span>
+        <div className="flex items-center gap-2 text-zinc-300">
+          <Loader2 className="w-5 h-5 animate-spin text-primary" />
+          <span className="text-sm font-medium">Connecting to speech recognition...</span>
         </div>
       ) : micState.status === "recording" || isRecording ? (
         <div className="flex flex-col items-center gap-3 w-full max-w-lg">
@@ -396,22 +441,22 @@ export default function AudioRecorder({
 
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-destructive animate-ping" />
-            <span className="text-sm text-destructive font-semibold">Recording Active... Click Red Button to Finish</span>
+            <span className="text-sm text-rose-400 font-semibold">Recording Active... Speak Now</span>
           </div>
 
           {livePreviewText ? (
-            <div className="w-full bg-accent/10 border border-accent/20 rounded-lg p-3 text-left">
-              <div className="flex items-center gap-1.5 text-xs text-accent font-medium mb-1">
-                <Volume2 className="w-3.5 h-3.5 animate-pulse" />
+            <div className="w-full bg-zinc-900 border border-primary/40 rounded-xl p-3.5 text-left shadow-md">
+              <div className="flex items-center gap-1.5 text-xs text-primary font-bold mb-1">
+                <Volume2 className="w-3.5 h-3.5 animate-pulse text-primary" />
                 Live Audio Captured So Far:
               </div>
-              <p className="text-sm text-foreground/80 italic leading-relaxed">
+              <p className="text-sm text-zinc-100 font-medium italic leading-relaxed">
                 "{livePreviewText}"
               </p>
             </div>
           ) : (
-            <p className="text-xs text-foreground/50 italic text-center">
-              Listening... Speak your answer now. Press Stop when finished to insert into your answer box.
+            <p className="text-xs text-zinc-400 italic text-center">
+              Listening... Speak your answer now. Transcript will appear above in real-time.
             </p>
           )}
         </div>
@@ -419,11 +464,11 @@ export default function AudioRecorder({
         <div className="flex flex-col items-center gap-3">
           <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20 max-w-sm">
             <AlertCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
-            <p className="text-xs text-destructive/80 leading-relaxed">{micState.message}</p>
+            <p className="text-xs text-rose-300 leading-relaxed">{micState.message}</p>
           </div>
           <button
             onClick={() => setMicState({ status: "idle" })}
-            className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors cursor-pointer font-semibold"
           >
             <RefreshCw className="w-3 h-3" />
             Try Again
