@@ -1125,6 +1125,7 @@ Candidate's Latest Submitted Response:
 ${combinedAnswer}
 
 Turn Context: ${currentTurnNum > 0 ? `This is candidate's response to follow-up probe #${currentTurnNum}.` : "This is candidate's initial response to the main question."}
+Follow-Up Turn Number So Far: ${currentTurnNum} (Up to 3 follow-up probing turns allowed per question).
 
 CRITICAL LIVE INTERVIEW DYNAMICS:
 1. NEVER reveal numerical scores, grades, or preach the ideal answer in "interviewerReply". Speak naturally as a human interviewer in a live call.
@@ -1133,7 +1134,14 @@ CRITICAL LIVE INTERVIEW DYNAMICS:
    - IF the candidate gave a negative, declining, or skip response (or explicitly expressed desire to pass or move on):
      Set "needsElaboration": false.
      Set "interviewerReply": A realistic, polite acknowledgement accepting their decision (e.g. "Alright, no problem at all." or "Understood, let's move on.") + ${isFinalQuestion ? "conclude by saying: 'That concludes our interview session! Thank you for your time.'" : "transition: 'Let\\'s move on to the next question.'"}
-   - IF the candidate's answer is brief, incomplete, vague, or missing expected technical depth/metrics/code for ${experienceLevel}, AND the candidate DID NOT ask to skip or give a negative/declining reply:
+   - IF the follow-up turn count has reached 3 (currentTurnNum >= 3):
+     Set "needsElaboration": false.
+     Set "interviewerReply": A concise, natural acknowledgement (e.g. "Okay, sounds good.", "Got it, thanks.", or "Understood.") + ${isFinalQuestion ? "conclude by saying: 'That concludes our interview session! Thank you for your time.'" : "transition: 'Let\\'s move on to the next question.'"}
+   - IF currentTurnNum < 3 AND the candidate asked a question or asked for a clarification/briefing (e.g., asking to brief about company, repeat question, explain role, or clarify expectations):
+     Set "needsElaboration": true.
+     Set "followUpQuestion": Answer their question naturally and politely, then warmly re-prompt or guide them back to answering the main question.
+     Set "interviewerReply": Exactly equal to "followUpQuestion".
+   - IF currentTurnNum < 3 AND the candidate's answer is brief, incomplete, vague, or missing expected technical depth/metrics/code for ${experienceLevel}, AND the candidate DID NOT ask to skip or give a negative/declining reply:
      Set "needsElaboration": true.
      Set "followUpQuestion": A realistic, direct, 1-sentence follow-up probing question building directly on what the candidate just said and asking for specific missing technical details, edge cases, or trade-offs (e.g. "Got it. Could you elaborate a bit more on how you handled edge cases or performance bottlenecks in that approach?").
      Set "interviewerReply": Exactly equal to "followUpQuestion".
@@ -1260,22 +1268,30 @@ Return ONLY a JSON object with this exact schema:
 
         const avgScore = Math.round(((relevance + clarity + depth + confidence) / 4) * 10) / 10;
 
+        const turnNum = typeof followUpCount === "number" ? followUpCount + (isFollowUp ? 1 : 0) : (isFollowUp ? 1 : 0);
+        const isQuestionOrBriefingRequest = /(company|brief|tell me about|what is|could you repeat|repeat|clarify|explain|can you|what do you|who is|about the role)/i.test(lowerAnswer);
+
         let needsElaboration = false;
         let followUpQuestion = "";
         let interviewerReply = "";
 
-        if (isNegative) {
+        if (isNegative || turnNum >= 3) {
           needsElaboration = false;
           interviewerReply = isFinalQuestion
             ? "Alright, no problem at all! That concludes our interview session today. Thank you for your time!"
             : "Alright, no problem. Let's move on to the next question.";
-        } else if (wordCount < 16 && !trimmedCode) {
+        } else if (isQuestionOrBriefingRequest || (wordCount < 16 && !trimmedCode)) {
           needsElaboration = true;
-          const turn = typeof followUpCount === "number" ? followUpCount + 1 : 1;
-          if (turn >= 2) {
+          if (isQuestionOrBriefingRequest && lowerAnswer.includes("company")) {
+            followUpQuestion = `Glad you asked! ${company || "Our company"} is dedicated to building innovative products and scaling high-impact engineering solutions. Now, could you please introduce yourself and walk me through your background?`;
+          } else if (isQuestionOrBriefingRequest && (lowerAnswer.includes("repeat") || lowerAnswer.includes("clarify"))) {
+            followUpQuestion = `Sure thing! The main question is: "${question}". Whenever you are ready, please share your response.`;
+          } else if (turnNum === 2) {
             followUpQuestion = "Got it. Could you speak to the specific technical trade-offs, metrics, or edge cases involved in that approach?";
+          } else if (turnNum === 1) {
+            followUpQuestion = "Understood. Could you elaborate a bit more on your technical approach, specific tools, or key metrics?";
           } else {
-            followUpQuestion = "Got it. Could you elaborate a bit more on your technical approach or specific tools and metrics you used?";
+            followUpQuestion = "Got it. Could you elaborate a bit more on your approach or specific tools and metrics you used?";
           }
           interviewerReply = followUpQuestion;
         } else {

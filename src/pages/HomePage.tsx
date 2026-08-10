@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import ResumeUploader from "../components/ResumeUploader";
 import InterviewSetup from "../components/InterviewSetup";
+import MicCheck from "../components/MicCheck";
 import { saveSession } from "../utils/storage";
 import type { InterviewSession } from "../utils/storage";
 
@@ -52,6 +53,7 @@ export default function HomePage() {
   const [interviewTrack, setInterviewTrack] = useState("full");
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isMicVerified, setIsMicVerified] = useState(false);
 
   // New interactive states
   const [showForm, setShowForm] = useState(false);
@@ -64,6 +66,20 @@ export default function HomePage() {
     if (!canStart) return;
     setIsGenerating(true);
     setError(null);
+
+    // Ensure microphone is connected and permission granted before interview starts
+    try {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach((t) => t.stop());
+        setIsMicVerified(true);
+      }
+    } catch (err: any) {
+      console.warn("Microphone pre-check failed:", err);
+      setError("Microphone permission is required before starting the interview. Please connect your mic or grant permissions.");
+      setIsGenerating(false);
+      return;
+    }
 
     try {
       let questions: (string | QuestionItem)[] = [];
@@ -464,6 +480,9 @@ export default function HomePage() {
                     setInterviewTrack(track);
                   }}
                 />
+
+                {/* Pre-Interview Microphone Check & Connection */}
+                <MicCheck onVerified={setIsMicVerified} />
 
                 {error && (
                   <div className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-xs text-destructive flex items-center gap-2">

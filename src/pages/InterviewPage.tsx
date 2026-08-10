@@ -5,6 +5,7 @@ import QuestionCard from "../components/QuestionCard";
 import AudioRecorder from "../components/AudioRecorder";
 import ResumeScorecard from "../components/ResumeScorecard";
 import StreamingText from "../components/StreamingText";
+import CodeEditor from "../components/CodeEditor";
 import { loadSession, saveSession } from "../utils/storage";
 import type { InterviewSession } from "../utils/storage";
 import { generateSpeechmaticsTTS } from "../utils/api";
@@ -465,14 +466,26 @@ export default function InterviewPage() {
         }
       } catch {
         const wordCount = (fullAnswerTranscript + " " + fullWrittenCode).split(/\s+/).length;
-        if (wordCount < 10) {
+        const currentTurnNum = followUpCount + (isFollowUp ? 1 : 0);
+        const lowerAns = fullAnswerTranscript.toLowerCase();
+        const isQuestionOrBrief = /(company|brief|tell me about|what is|could you repeat|repeat|clarify|explain|can you|what do you|who is|about the role)/i.test(lowerAns);
+
+        if (currentTurnNum < 3 && (isQuestionOrBrief || wordCount < 15)) {
           needsElaboration = true;
-          followUpQuestion = followUpCount >= 1 
-            ? "Got it. Could you speak to the specific technical trade-offs, metrics, or edge cases involved in that approach?" 
-            : "Got it. Could you elaborate a bit more on your technical approach or specific tools and metrics you used?";
+          if (isQuestionOrBrief && lowerAns.includes("company")) {
+            followUpQuestion = `Glad you asked! ${session.company || "Our company"} is dedicated to building innovative products and scaling high-impact engineering solutions. Now, could you please introduce yourself and walk me through your background?`;
+          } else if (isQuestionOrBrief && (lowerAns.includes("repeat") || lowerAns.includes("clarify"))) {
+            followUpQuestion = `Sure thing! The main question is: "${currentQuestion.text}". Whenever you're ready, please share your response.`;
+          } else if (currentTurnNum === 2) {
+            followUpQuestion = "Got it. Could you speak to the specific technical trade-offs, metrics, or edge cases involved in that approach?";
+          } else if (currentTurnNum === 1) {
+            followUpQuestion = "Understood. Could you elaborate a bit more on your technical approach, specific tools, or key metrics?";
+          } else {
+            followUpQuestion = "Got it. Could you elaborate a bit more on your approach or specific tools and metrics you used?";
+          }
           interviewerReply = followUpQuestion;
-          score = 4; relevance = 4; clarity = 5; depth = 3; confidence = 4;
-          feedback = "Answer is brief. Try adding specific technical examples or code details.";
+          score = 5; relevance = 5; clarity = 6; depth = 4; confidence = 5;
+          feedback = "Follow-up probe issued. Try providing more specific technical details, STAR examples, or metrics.";
         } else {
           score = 7; relevance = 7; clarity = 7; depth = 7; confidence = 7;
           feedback = "Solid response! Good coverage of your technical approach.";
@@ -534,7 +547,7 @@ export default function InterviewPage() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [session, currentQuestion, answerText, writtenCode, isFollowUp, speakText]);
+  }, [session, currentQuestion, answerText, writtenCode, isFollowUp, followUpCount, speakText]);
 
   // Handle explicit Skip Question / Skip Follow-Up action
   const handleSkipQuestion = useCallback(() => {
@@ -952,25 +965,16 @@ export default function InterviewPage() {
             />
 
             {/* Written Code / Solution Sandbox Block */}
-            <div className="bg-zinc-950/90 border border-zinc-800 rounded-xl p-3.5 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Code2 className="w-4 h-4 text-primary" />
-                  <span className="text-xs font-bold text-zinc-200">Written Code / Solution Sandbox (Optional)</span>
-                </div>
-                <span className="text-[10px] text-zinc-400 font-mono">Evaluated with voice</span>
-              </div>
-              <textarea
+            <div className="space-y-2">
+              <CodeEditor
                 value={writtenCode}
-                onChange={(e) => setWrittenCode(e.target.value)}
-                placeholder="// Write code, SQL queries, algorithm logic, or written notes here...&#10;// This written solution will be submitted to the AI interviewer alongside your verbal response."
-                rows={4}
-                className="w-full font-mono text-xs text-emerald-300 placeholder:text-zinc-500 bg-zinc-900 border border-zinc-800 rounded-lg p-3 focus:border-primary focus:outline-none leading-relaxed min-h-[100px] resize-y"
+                onChange={setWrittenCode}
+                disabled={isSubmitting}
               />
             </div>
 
             {/* Microphone & Call Action Bar */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-3 border-t border-zinc-800">
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-border w-full">
               
               {/* Audio Recorder Controls */}
               <div className="flex items-center gap-3">
@@ -984,36 +988,36 @@ export default function InterviewPage() {
               </div>
 
               {/* Submit & Skip Action Buttons */}
-              <div className="flex items-center gap-2.5 w-full sm:w-auto">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={handleSkipQuestion}
                   disabled={isSubmitting}
-                  className="px-3.5 py-3.5 rounded-xl font-bold text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700/80 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                  title="Skip current question/follow-up and move to next question"
+                  className="px-3.5 py-2.5 rounded-lg font-semibold text-xs sm:text-sm bg-muted hover:bg-muted/80 text-foreground/80 border border-border flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
+                  title="Skip current question/follow-up"
                 >
-                  <SkipForward className="w-3.5 h-3.5 text-zinc-400" />
+                  <SkipForward className="w-3.5 h-3.5 text-foreground/60 shrink-0" />
                   <span>{isFollowUp ? "Skip Follow-Up" : "Skip Question"}</span>
                 </button>
 
                 <button
                   onClick={handleSubmitAnswer}
                   disabled={!isTextAvailable || isSubmitting}
-                  className={`w-full sm:w-auto px-6 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg ${
+                  className={`px-4 sm:px-5 py-2.5 rounded-lg font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm whitespace-nowrap ${
                     isTextAvailable && !isSubmitting
-                      ? "bg-gradient-to-r from-primary via-accent to-primary text-white hover:opacity-95 shadow-primary/20 scale-102"
-                      : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                      ? "bg-accent hover:bg-accent/90 text-white shadow-accent/20"
+                      : "bg-muted text-foreground/40 border border-border cursor-not-allowed"
                   }`}
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin text-white" />
-                      <span>Submitting &amp; Generating AI Reply...</span>
+                      <Loader2 className="w-4 h-4 animate-spin text-white shrink-0" />
+                      <span>Submitting...</span>
                     </>
                   ) : (
                     <>
-                      <CheckCircle className="w-4 h-4 text-emerald-400" />
-                      <span>Submit Answer &amp; Hear AI Reply</span>
-                      <ArrowRight className="w-4 h-4" />
+                      <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>Submit Answer</span>
+                      <ArrowRight className="w-3.5 h-3.5 shrink-0" />
                     </>
                   )}
                 </button>

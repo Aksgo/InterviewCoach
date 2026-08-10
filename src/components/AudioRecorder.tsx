@@ -422,77 +422,86 @@ export default function AudioRecorder({
   const hasError = micState.status === "error" || micState.status === "unsupported";
 
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div className="flex flex-col items-center sm:items-start gap-2">
       {micState.status === "connecting" ? (
-        <div className="flex items-center gap-2 text-zinc-300">
-          <Loader2 className="w-5 h-5 animate-spin text-primary" />
-          <span className="text-sm font-medium">Connecting to speech recognition...</span>
+        <div className="flex items-center gap-2 text-foreground/80 bg-muted/50 px-3 py-1.5 rounded-lg border border-border">
+          <Loader2 className="w-4 h-4 animate-spin text-primary" />
+          <span className="text-xs font-medium">Connecting mic...</span>
         </div>
       ) : micState.status === "recording" || isRecording ? (
-        <div className="flex flex-col items-center gap-3 w-full max-w-lg">
-          <button
-            onClick={stopRecording}
-            className="w-16 h-16 rounded-full bg-destructive text-white flex items-center justify-center animate-recording hover:bg-destructive/90 transition-all active:scale-95 cursor-pointer shadow-lg"
-            aria-label="Stop recording"
-            title="Click to stop recording and place transcript in your answer"
-          >
-            <StopCircle className="w-8 h-8" />
-          </button>
+        <div className="flex flex-col gap-2 w-full max-w-md">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={stopRecording}
+              className="w-11 h-11 rounded-full bg-destructive text-white flex items-center justify-center animate-recording hover:bg-destructive/90 transition-all active:scale-95 cursor-pointer shadow-md shrink-0"
+              aria-label="Stop recording"
+              title="Click to stop recording"
+            >
+              <StopCircle className="w-5 h-5" />
+            </button>
 
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-destructive animate-ping" />
-            <span className="text-sm text-rose-400 font-semibold">Recording Active... Speak Now</span>
+            <div className="flex flex-col text-left">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-destructive animate-ping" />
+                <span className="text-xs text-rose-500 dark:text-rose-400 font-semibold whitespace-nowrap">Recording Active</span>
+              </div>
+              <p className="text-[11px] text-foreground/60 italic whitespace-nowrap">
+                Listening... speak your response
+              </p>
+            </div>
           </div>
 
-          {livePreviewText ? (
-            <div className="w-full bg-zinc-900 border border-primary/40 rounded-xl p-3.5 text-left shadow-md">
-              <div className="flex items-center gap-1.5 text-xs text-primary font-bold mb-1">
-                <Volume2 className="w-3.5 h-3.5 animate-pulse text-primary" />
-                Live Audio Captured So Far:
+          {livePreviewText && (
+            <div className="w-full bg-card border border-primary/30 rounded-lg p-2.5 text-left shadow-sm">
+              <div className="flex items-center gap-1.5 text-[11px] text-primary font-semibold mb-0.5">
+                <Volume2 className="w-3 h-3 animate-pulse text-primary" />
+                Captured Speech:
               </div>
-              <p className="text-sm text-zinc-100 font-medium italic leading-relaxed">
+              <p className="text-xs text-foreground/90 italic leading-relaxed line-clamp-2">
                 "{livePreviewText}"
               </p>
             </div>
-          ) : (
-            <p className="text-xs text-zinc-400 italic text-center">
-              Listening... Speak your answer now. Transcript will appear above in real-time.
-            </p>
           )}
         </div>
       ) : hasError ? (
-        <div className="flex flex-col items-center gap-3">
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20 max-w-sm">
-            <AlertCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
-            <p className="text-xs text-rose-300 leading-relaxed">{micState.message}</p>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-destructive/10 border border-destructive/20 text-xs text-rose-500">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+            <span className="line-clamp-1 max-w-[200px] text-[11px]">{micState.message}</span>
           </div>
           <button
             onClick={() => setMicState({ status: "idle" })}
-            className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors cursor-pointer font-semibold"
+            className="p-1 text-xs text-primary hover:underline flex items-center gap-1 cursor-pointer font-medium"
           >
             <RefreshCw className="w-3 h-3" />
-            Try Again
+            Retry
           </button>
         </div>
       ) : (
-        <button
-          onClick={startRecording}
-          disabled={disabled || isMicUnsupported}
-          className="relative w-16 h-16 rounded-full bg-accent text-white flex items-center justify-center hover:opacity-90 transition-all disabled:opacity-50 active:scale-95 cursor-pointer shadow-md"
-          aria-label="Start recording"
-          title={
-            isMicUnsupported
-              ? "Microphone not available in this browser"
-              : "Start recording your answer"
-          }
-        >
-          <Mic className="w-8 h-8" />
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={startRecording}
+            disabled={disabled || isMicUnsupported}
+            className="w-11 h-11 rounded-full bg-primary text-on-primary flex items-center justify-center hover:opacity-90 transition-all disabled:opacity-50 active:scale-95 cursor-pointer shadow-md shrink-0"
+            aria-label="Start recording"
+            title={
+              isMicUnsupported
+                ? "Microphone not available in this browser"
+                : "Start recording your answer"
+            }
+          >
+            <Mic className="w-5 h-5" />
+          </button>
+          <div className="hidden md:flex flex-col text-left">
+            <span className="text-xs font-semibold text-foreground/80 whitespace-nowrap">Voice Input</span>
+            <span className="text-[11px] text-foreground/50 whitespace-nowrap">Click mic to record response</span>
+          </div>
+        </div>
       )}
 
       {isMicUnsupported && (
-        <p className="text-xs text-foreground/40 text-center max-w-xs">
-          Microphone access isn't available in this browser. Type your answer below instead.
+        <p className="text-[11px] text-foreground/50">
+          Microphone unavailable. Type response in box.
         </p>
       )}
     </div>
