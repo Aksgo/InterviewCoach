@@ -8,6 +8,7 @@ import TermsPage from "./pages/TermsPage";
 import { AIStatusProvider } from "./context/AIStatusContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import AIStatusModal from "./components/AIStatusModal";
+import { Analytics } from "@vercel/analytics/next"
 
 export default function App() {
   return (
