@@ -41,6 +41,7 @@ export default function InterviewPage() {
   const lastSpokenIndexRef = useRef<number | null>(null);
   const onSpeechEndCallbackRef = useRef<(() => void) | null>(null);
   const questionStartTimeRef = useRef<number>(Date.now());
+  const activeSpeechIdRef = useRef<number>(0);
 
   const currentQuestion = session?.questions[session.currentQuestionIndex];
 
@@ -58,8 +59,10 @@ export default function InterviewPage() {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  // Stop current audio playback
+  // Stop current audio playback and invalidate pending async TTS tasks
   const stopSpeaking = useCallback(() => {
+    activeSpeechIdRef.current += 1;
+    onSpeechEndCallbackRef.current = null;
     stopThinkingSound();
     if (speakTimerRef.current) {
       clearTimeout(speakTimerRef.current);
@@ -73,6 +76,7 @@ export default function InterviewPage() {
       try {
         audioElementRef.current.pause();
         audioElementRef.current.currentTime = 0;
+        audioElementRef.current.src = "";
       } catch (err) {
         console.warn("Audio element pause error:", err);
       }
@@ -90,108 +94,124 @@ export default function InterviewPage() {
   }, []);
 
   // Browser speech synthesis fallback
-  const fallbackToBrowserSpeech = useCallback((text: string, onEnded?: () => void) => {
-    if (!("speechSynthesis" in window)) {
-      stopThinkingSound();
-      setSpeechBlocked(true);
-      if (onEnded) onEnded();
-      return;
-    }
+  const fallbackToBrowserSpeech = useCallback(
+    (text: string, onEnded?: () => void, targetSpeechId?: number) => {
+      const currentSpeechId = targetSpeechId ?? activeSpeechIdRef.current;
+      if (activeSpeechIdRef.current !== currentSpeechId) return;
 
-    stopSpeaking();
-
-    try {
-      window.speechSynthesis.cancel();
-      if (window.speechSynthesis.paused) {
-        window.speechSynthesis.resume();
-      }
-    } catch (e) {
-      console.warn("Speech prep warning:", e);
-    }
-
-    setIsSpeaking(true);
-    setSpeechBlocked(false);
-
-    speakTimerRef.current = setTimeout(() => {
-      try {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 0.95;
-        utterance.pitch = 0.94;
-        utterance.volume = 1.0;
-
-        const voices = window.speechSynthesis.getVoices();
-        if (voices && voices.length > 0) {
-          const maleVoice =
-            voices.find(
-              (v) =>
-                v.lang.startsWith("en") &&
-                (v.name.includes("Guy") ||
-                  v.name.includes("Christopher") ||
-                  v.name.includes("Ryan") ||
-                  v.name.includes("Google US English Male") ||
-                  v.name.includes("Daniel") ||
-                  v.name.includes("David") ||
-                  v.name.includes("Alex") ||
-                  v.name.toLowerCase().includes("male"))
-            ) || voices.find((v) => v.lang.startsWith("en"));
-
-          if (maleVoice) {
-            utterance.voice = maleVoice;
-          }
-        }
-
-        utterance.onstart = () => {
-          stopThinkingSound();
-          setIsSpeaking(true);
-          setIsTextRevealed(true);
-          setSpeechBlocked(false);
-
-          if (resumeIntervalRef.current) clearInterval(resumeIntervalRef.current);
-          resumeIntervalRef.current = setInterval(() => {
-            if ("speechSynthesis" in window && window.speechSynthesis.speaking) {
-              window.speechSynthesis.resume();
-            } else {
-              clearInterval(resumeIntervalRef.current);
-            }
-          }, 3500);
-        };
-
-        utterance.onend = () => {
-          stopThinkingSound();
-          if (resumeIntervalRef.current) clearInterval(resumeIntervalRef.current);
-          setIsSpeaking(false);
-          setIsTextRevealed(true);
-          if (onEnded) onEnded();
-        };
-
-        utterance.onerror = (e) => {
-          stopThinkingSound();
-          console.warn("Speech utterance error:", e);
-          if (resumeIntervalRef.current) clearInterval(resumeIntervalRef.current);
-          setIsSpeaking(false);
-          setIsTextRevealed(true);
-          if (e.error === "not-allowed" || e.error === "canceled") {
-            setSpeechBlocked(true);
-          }
-          if (onEnded) onEnded();
-        };
-
-        window.speechSynthesis.speak(utterance);
-      } catch (err) {
+      if (!("speechSynthesis" in window)) {
         stopThinkingSound();
-        console.error("Speech synthesis invocation failed:", err);
-        setIsSpeaking(false);
-        setIsTextRevealed(true);
         setSpeechBlocked(true);
-        if (onEnded) onEnded();
+        if (onEnded && activeSpeechIdRef.current === currentSpeechId) onEnded();
+        return;
       }
-    }, 50);
-  }, [stopSpeaking]);
 
-  // Main Speechmatics TTS Invocation
+      stopSpeaking();
+      const freshSpeechId = activeSpeechIdRef.current;
+
+      try {
+        window.speechSynthesis.cancel();
+        if (window.speechSynthesis.paused) {
+          window.speechSynthesis.resume();
+        }
+      } catch (e) {
+        console.warn("Speech prep warning:", e);
+      }
+
+      setIsSpeaking(true);
+      setSpeechBlocked(false);
+
+      speakTimerRef.current = setTimeout(() => {
+        if (activeSpeechIdRef.current !== freshSpeechId) return;
+
+        try {
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.rate = 0.95;
+          utterance.pitch = 0.94;
+          utterance.volume = 1.0;
+
+          const voices = window.speechSynthesis.getVoices();
+          if (voices && voices.length > 0) {
+            const maleVoice =
+              voices.find(
+                (v) =>
+                  v.lang.startsWith("en") &&
+                  (v.name.includes("Guy") ||
+                    v.name.includes("Christopher") ||
+                    v.name.includes("Ryan") ||
+                    v.name.includes("Google US English Male") ||
+                    v.name.includes("Daniel") ||
+                    v.name.includes("David") ||
+                    v.name.includes("Alex") ||
+                    v.name.toLowerCase().includes("male"))
+              ) || voices.find((v) => v.lang.startsWith("en"));
+
+            if (maleVoice) {
+              utterance.voice = maleVoice;
+            }
+          }
+
+          utterance.onstart = () => {
+            if (activeSpeechIdRef.current !== freshSpeechId) {
+              window.speechSynthesis.cancel();
+              return;
+            }
+            stopThinkingSound();
+            setIsSpeaking(true);
+            setIsTextRevealed(true);
+            setSpeechBlocked(false);
+
+            if (resumeIntervalRef.current) clearInterval(resumeIntervalRef.current);
+            resumeIntervalRef.current = setInterval(() => {
+              if ("speechSynthesis" in window && window.speechSynthesis.speaking) {
+                window.speechSynthesis.resume();
+              } else {
+                clearInterval(resumeIntervalRef.current);
+              }
+            }, 3500);
+          };
+
+          utterance.onend = () => {
+            stopThinkingSound();
+            if (resumeIntervalRef.current) clearInterval(resumeIntervalRef.current);
+            setIsSpeaking(false);
+            setIsTextRevealed(true);
+            if (activeSpeechIdRef.current === freshSpeechId && onEnded) onEnded();
+          };
+
+          utterance.onerror = (e) => {
+            stopThinkingSound();
+            console.warn("Speech utterance error:", e);
+            if (resumeIntervalRef.current) clearInterval(resumeIntervalRef.current);
+            setIsSpeaking(false);
+            setIsTextRevealed(true);
+            if (e.error === "not-allowed" || e.error === "canceled") {
+              setSpeechBlocked(true);
+            }
+            if (activeSpeechIdRef.current === freshSpeechId && onEnded) onEnded();
+          };
+
+          if (activeSpeechIdRef.current === freshSpeechId) {
+            window.speechSynthesis.speak(utterance);
+          }
+        } catch (err) {
+          stopThinkingSound();
+          console.error("Speech synthesis invocation failed:", err);
+          setIsSpeaking(false);
+          setIsTextRevealed(true);
+          setSpeechBlocked(true);
+          if (activeSpeechIdRef.current === freshSpeechId && onEnded) onEnded();
+        }
+      }, 50);
+    },
+    [stopSpeaking]
+  );
+
+  // Main Speechmatics TTS Invocation with cancellation check
   const speakText = useCallback(
     async (text: string, onEnded?: () => void) => {
       stopSpeaking();
+      const currentSpeechId = activeSpeechIdRef.current;
       startThinkingSound();
       onSpeechEndCallbackRef.current = onEnded || null;
 
@@ -199,6 +219,13 @@ export default function InterviewPage() {
       setIsTextRevealed(false);
       try {
         const res = await generateSpeechmaticsTTS(text, "jack");
+
+        // Check if user pressed End Call or stopped speech while synthesis was in flight
+        if (activeSpeechIdRef.current !== currentSpeechId) {
+          stopThinkingSound();
+          return;
+        }
+
         setIsTtsLoading(false);
 
         if (res && res.audio) {
@@ -208,6 +235,12 @@ export default function InterviewPage() {
           audioElementRef.current = audio;
 
           audio.onplay = () => {
+            if (activeSpeechIdRef.current !== currentSpeechId) {
+              audio.pause();
+              audio.src = "";
+              stopThinkingSound();
+              return;
+            }
             stopThinkingSound();
             setIsSpeaking(true);
             setIsTextRevealed(true);
@@ -219,7 +252,7 @@ export default function InterviewPage() {
             setIsSpeaking(false);
             setIsTextRevealed(true);
             audioElementRef.current = null;
-            if (onSpeechEndCallbackRef.current) {
+            if (activeSpeechIdRef.current === currentSpeechId && onSpeechEndCallbackRef.current) {
               const cb = onSpeechEndCallbackRef.current;
               onSpeechEndCallbackRef.current = null;
               cb();
@@ -227,23 +260,28 @@ export default function InterviewPage() {
           };
 
           audio.onerror = (err) => {
+            if (activeSpeechIdRef.current !== currentSpeechId) return;
             console.warn("Speechmatics Audio playback warning, falling back to browser speech:", err);
             audioElementRef.current = null;
             setIsTextRevealed(true);
-            fallbackToBrowserSpeech(text, onEnded);
+            fallbackToBrowserSpeech(text, onEnded, currentSpeechId);
           };
 
-          await audio.play();
+          if (activeSpeechIdRef.current === currentSpeechId) {
+            await audio.play();
+          }
         } else {
+          if (activeSpeechIdRef.current !== currentSpeechId) return;
           console.warn("No audio returned from Speechmatics TTS, falling back to browser speech");
           setIsTextRevealed(true);
-          fallbackToBrowserSpeech(text, onEnded);
+          fallbackToBrowserSpeech(text, onEnded, currentSpeechId);
         }
       } catch (err) {
+        if (activeSpeechIdRef.current !== currentSpeechId) return;
         console.warn("Speechmatics TTS request failed, falling back to browser speech:", err);
         setIsTtsLoading(false);
         setIsTextRevealed(true);
-        fallbackToBrowserSpeech(text, onEnded);
+        fallbackToBrowserSpeech(text, onEnded, currentSpeechId);
       }
     },
     [stopSpeaking, fallbackToBrowserSpeech]
@@ -804,10 +842,13 @@ export default function InterviewPage() {
                   <div className="absolute -inset-3 rounded-full bg-rose-500/30 animate-ping opacity-75" />
                 )}
 
-                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-tr from-primary via-accent to-indigo-500 p-1 shadow-xl flex items-center justify-center">
-                  <div className="w-full h-full rounded-full bg-zinc-900 flex items-center justify-center text-3xl font-black text-white">
-                    AI
-                  </div>
+                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-tr from-primary via-accent to-indigo-500 p-1 shadow-xl flex items-center justify-center overflow-hidden">
+                  <img
+                    src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=600"
+                    alt="Male AI Technical Interviewer"
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full rounded-full object-cover object-center border-2 border-zinc-900"
+                  />
                 </div>
 
                 {/* Status icon badge */}

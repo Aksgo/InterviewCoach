@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Analytics } from "@vercel/analytics/react";
 import Header from "./components/Header";
 import HomePage from "./pages/HomePage";
 import InterviewPage from "./pages/InterviewPage";
@@ -8,7 +9,6 @@ import TermsPage from "./pages/TermsPage";
 import { AIStatusProvider } from "./context/AIStatusContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import AIStatusModal from "./components/AIStatusModal";
-import { Analytics } from "@vercel/analytics/react"
 
 export default function App() {
   return (
@@ -25,6 +25,7 @@ export default function App() {
               <Route path="/terms" element={<TermsPage />} />
             </Routes>
             <AIStatusModal />
+            <Analytics />
           </div>
         </BrowserRouter>
       </AIStatusProvider>

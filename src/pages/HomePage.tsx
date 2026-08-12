@@ -33,6 +33,8 @@ import {
 import ResumeUploader from "../components/ResumeUploader";
 import InterviewSetup from "../components/InterviewSetup";
 import MicCheck from "../components/MicCheck";
+import DemoVideoPlayer from "../components/DemoVideoPlayer";
+import CompanyLogosBanner from "../components/CompanyLogosBanner";
 import { saveSession } from "../utils/storage";
 import type { InterviewSession } from "../utils/storage";
 
@@ -332,109 +334,201 @@ export default function HomePage() {
     <div className="min-h-screen flex flex-col justify-between bg-background">
       <main className="flex-grow bg-background text-foreground pb-24">
       
-      {/* 1. Large Premium Hero Banner */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-primary/10 via-background to-background pt-16 pb-16 border-b border-border/40">
+      {/* 1. Hero Banner matching reference design */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-primary/10 via-background to-background pt-12 pb-16 border-b border-border/40">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent -z-10" />
         
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="flex flex-col items-center text-center space-y-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
             
-            {/* Real-time Indicator Badges */}
-            <div className="flex flex-wrap items-center justify-center gap-2.5">
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/25 text-primary text-xs font-bold shadow-xs">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Speechmatics Voice STT</span>
-              </span>
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/25 text-accent text-xs font-bold shadow-xs">
-                <Radio className="w-3.5 h-3.5 animate-pulse text-accent" />
-                <span>Continuous Live Call Mode</span>
-              </span>
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold">
-                <Cpu className="w-3.5 h-3.5" />
-                <span>Gemini Core Grounding</span>
-              </span>
+            {/* Left Column: Hero Text & Call-To-Action */}
+            <div className="lg:col-span-7 space-y-6 text-left">
+              
+              {/* Category Badges / Pills */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-bold shadow-xs">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Simulate Voice</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold shadow-xs">
+                  <Volume2 className="w-3.5 h-3.5" />
+                  <span>Voice Coaching</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold">
+                  <Radio className="w-3.5 h-3.5 animate-pulse" />
+                  <span>Continuous AI Live Call</span>
+                </span>
+              </div>
+
+              {/* Main Headline */}
+              <h1 className="font-heading text-4xl sm:text-6xl lg:text-6xl font-black text-foreground tracking-tight leading-[1.08]">
+                Train for <span className="bg-gradient-to-r from-teal-500 via-primary to-accent bg-clip-text text-transparent">Real Interviews</span> <br />
+                with <span className="bg-gradient-to-r from-primary via-accent to-emerald-500 bg-clip-text text-transparent">AI Agents</span>
+              </h1>
+
+              {/* Sub-headline */}
+              <p className="text-base sm:text-lg text-foreground/75 leading-relaxed font-normal max-w-2xl">
+                Get a simulated voice interview to test your skills with AI. Upload your resume, select target companies, practice technical &amp; behavioral questions in real-time, and get instantSpeechmatics voice feedback.
+              </p>
+
+              {/* Action Buttons */}
+              <div className="pt-2 flex flex-wrap items-center gap-3">
+                <button
+                  onClick={() => {
+                    setShowForm(true);
+                    setTimeout(() => {
+                      document.getElementById("setup-form")?.scrollIntoView({ behavior: "smooth" });
+                    }, 150);
+                  }}
+                  className="group px-7 py-3.5 bg-primary hover:bg-primary/90 text-white font-bold text-sm sm:text-base rounded-xl shadow-lg hover:shadow-primary/25 transition-all flex items-center gap-2.5 cursor-pointer"
+                >
+                  <span>Start Practice Interview</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </button>
+
+                <button
+                  onClick={() => {
+                    const el = document.getElementById("demo-video-section");
+                    el?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="px-6 py-3.5 bg-card hover:bg-muted text-foreground/80 hover:text-foreground font-semibold text-sm rounded-xl transition-all border border-border/80 shadow-xs cursor-pointer flex items-center gap-2"
+                >
+                  <Video className="w-4 h-4 text-primary" />
+                  <span>Watch Demo Video</span>
+                </button>
+              </div>
+
+              {/* Visual Feature Highlights */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-border/50">
+                <div className="p-2.5 rounded-lg bg-card/60 border border-border/60">
+                  <p className="text-xs font-bold text-foreground">Real-Time STT</p>
+                  <p className="text-[10px] text-foreground/50">Speechmatics Voice</p>
+                </div>
+                <div className="p-2.5 rounded-lg bg-card/60 border border-border/60">
+                  <p className="text-xs font-bold text-foreground">Custom Resume</p>
+                  <p className="text-[10px] text-foreground/50">Grounded Questions</p>
+                </div>
+                <div className="p-2.5 rounded-lg bg-card/60 border border-border/60">
+                  <p className="text-xs font-bold text-foreground">Live Sandbox</p>
+                  <p className="text-[10px] text-foreground/50">Code & SQL Editor</p>
+                </div>
+                <div className="p-2.5 rounded-lg bg-card/60 border border-border/60">
+                  <p className="text-xs font-bold text-foreground">Scorecard Report</p>
+                  <p className="text-[10px] text-foreground/50">Detailed Metrics</p>
+                </div>
+              </div>
+
             </div>
 
-            {/* Main Catchy Header */}
-            <h1 className="font-heading text-4xl sm:text-6xl lg:text-7xl font-black text-foreground tracking-tight max-w-4xl leading-[1.08]">
-              Simulate Real <span className="text-primary bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">Voice Interviews</span> with AI
-            </h1>
+            {/* Right Column: AI Interviewer Persona Hero Graphic Card */}
+            <div className="lg:col-span-5 relative flex items-center justify-center">
+              <div className="relative w-full max-w-md mx-auto">
+                
+                {/* Background Glow */}
+                <div className="absolute -inset-2 bg-gradient-to-tr from-primary/30 via-accent/20 to-teal-500/30 rounded-3xl blur-xl opacity-70 -z-10" />
 
-            {/* Direct Description */}
-            <p className="text-lg sm:text-xl text-foreground/75 max-w-2xl leading-relaxed font-normal">
-              Practice speaking in real-time. Upload your resume to instantly receive custom grounded questions, hear realistic Speechmatics vocal feedback, and view a comprehensive cost-to-performance scorecard.
-            </p>
+                {/* Main Card */}
+                <div className="relative rounded-2xl border border-border/80 bg-card p-4 shadow-2xl overflow-hidden">
+                  
+                  {/* Persona Header Image */}
+                  <div className="relative rounded-xl overflow-hidden bg-muted aspect-[4/3] group">
+                    <img
+                      src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=800"
+                      alt="Male AI Technical Interviewer"
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-            {/* Prompted Call To Action Button (Opens the Form) */}
-            <div className="pt-4 flex flex-col sm:flex-row items-center gap-4 justify-center">
-              <button
-                onClick={() => {
-                  setShowForm(true);
-                  setTimeout(() => {
-                    document.getElementById("setup-form")?.scrollIntoView({ behavior: "smooth" });
-                  }, 150);
-                }}
-                className="group px-8 py-4 bg-primary text-white font-extrabold text-base rounded-xl shadow-lg hover:shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2.5 cursor-pointer"
-              >
-                <span>Take a Live Practice Interview</span>
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </button>
+                    {/* Live Call Status */}
+                    <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md border border-white/20 text-white text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-md">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span>AI Interviewer Active</span>
+                    </div>
 
-              <button
-                onClick={() => {
-                  const el = document.getElementById("rubrics-guide");
-                  el?.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="px-6 py-4 bg-muted hover:bg-muted/80 text-foreground/80 hover:text-foreground font-bold text-sm rounded-xl transition-all border border-border/50 cursor-pointer"
-              >
-                Review Assessment Matrix
-              </button>
-            </div>
+                    {/* Bottom Persona Details */}
+                    <div className="absolute bottom-3 left-3 right-3 text-white text-left">
+                      <h3 className="text-base font-bold tracking-wide">Senior Technical Interviewer</h3>
+                      <p className="text-xs text-white/80">AI System &amp; Resume Specialist</p>
+                    </div>
+                  </div>
 
-            {/* Hero Core Visual Features Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-5xl pt-8">
-              <div className="p-4 rounded-xl bg-card border border-border/80 flex items-center gap-3.5 shadow-xs hover:border-primary/40 transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  <Video className="w-5 h-5 text-primary" />
-                </div>
-                <div className="text-left">
-                  <p className="text-xs font-extrabold text-foreground">Interactive Call Screen</p>
-                  <p className="text-[10px] text-foreground/50">Realistic mock interface</p>
-                </div>
-              </div>
+                  {/* Overlaid Floating Badge Cards (matching reference image) */}
 
-              <div className="p-4 rounded-xl bg-card border border-border/80 flex items-center gap-3.5 shadow-xs hover:border-accent/40 transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
-                  <Volume2 className="w-5 h-5 text-accent" />
-                </div>
-                <div className="text-left">
-                  <p className="text-xs font-extrabold text-foreground">Ultra-Low Latency TTS</p>
-                  <p className="text-[10px] text-foreground/50">Natural dialogue flow</p>
-                </div>
-              </div>
+                  {/* Top Right Floating Badge */}
+                  <div className="absolute top-8 -right-3 sm:-right-5 bg-card/95 backdrop-blur-md border border-border p-2.5 rounded-xl shadow-xl flex items-center gap-2 z-10 animate-bounce-slow">
+                    <img
+                      src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=150"
+                      alt="Nanya"
+                      referrerPolicy="no-referrer"
+                      className="w-8 h-8 rounded-full object-cover border border-primary"
+                    />
+                    <div className="text-left pr-1">
+                      <p className="text-[11px] font-bold text-foreground leading-tight">Nanya Govil</p>
+                      <p className="text-[9px] text-foreground/60">Design &amp; AI Lead</p>
+                    </div>
+                  </div>
 
-              <div className="p-4 rounded-xl bg-card border border-border/80 flex items-center gap-3.5 shadow-xs hover:border-emerald-500/40 transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
-                  <Zap className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <div className="text-left">
-                  <p className="text-xs font-extrabold text-foreground">Auto-Mic Response</p>
-                  <p className="text-[10px] text-foreground/50">Hands-free microphone</p>
-                </div>
-              </div>
+                  {/* Left Middle Floating Badge */}
+                  <div className="absolute bottom-20 -left-3 sm:-left-5 bg-card/95 backdrop-blur-md border border-border p-2.5 rounded-xl shadow-xl flex items-center gap-2 z-10">
+                    <div className="w-7 h-7 rounded-full bg-emerald-500/15 text-emerald-500 flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="w-4 h-4" />
+                    </div>
+                    <div className="text-left pr-1">
+                      <p className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">Voice Verified</p>
+                      <p className="text-[9px] text-foreground/60">Speechmatics Active</p>
+                    </div>
+                  </div>
 
-              <div className="p-4 rounded-xl bg-card border border-border/80 flex items-center gap-3.5 shadow-xs hover:border-amber-500/40 transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
-                  <Globe className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                </div>
-                <div className="text-left">
-                  <p className="text-xs font-extrabold text-foreground">Glassdoor & LeetCode</p>
-                  <p className="text-[10px] text-foreground/50">Authentic interview pools</p>
+                  {/* Bottom Right Floating Badge */}
+                  <div className="absolute -bottom-2 right-4 bg-card/95 backdrop-blur-md border border-border px-3 py-2 rounded-xl shadow-xl flex items-center gap-2 z-10">
+                    <img
+                      src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150"
+                      alt="Candidate"
+                      referrerPolicy="no-referrer"
+                      className="w-7 h-7 rounded-full object-cover border border-border"
+                    />
+                    <div className="text-left">
+                      <p className="text-[10px] font-semibold text-foreground">Scorecard Evaluation</p>
+                      <p className="text-[9px] text-primary font-bold">100% Grounded</p>
+                    </div>
+                  </div>
+
                 </div>
               </div>
             </div>
 
           </div>
+        </div>
+      </section>
+
+      {/* Trusted By Company Logos Tile Banner */}
+      <CompanyLogosBanner />
+
+      {/* 2. Demonstration Video / Animated GIF Showcase Section (Right below Hero) */}
+      <section id="demo-video-section" className="py-12 bg-muted/30 border-b border-border/50">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="text-center space-y-3 mb-8">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold">
+              <Video className="w-3.5 h-3.5" />
+              <span>Interactive Application Demo</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
+              Experience the Full AI Voice Interview Flow
+            </h2>
+            <p className="text-sm text-foreground/60 max-w-xl mx-auto">
+              From target role configuration to continuous voice dialogue, real-time STT, and automated transcript review.
+            </p>
+          </div>
+
+          <DemoVideoPlayer
+            onStartPractice={() => {
+              setShowForm(true);
+              setTimeout(() => {
+                document.getElementById("setup-form")?.scrollIntoView({ behavior: "smooth" });
+              }, 150);
+            }}
+          />
         </div>
       </section>
 
@@ -889,9 +983,11 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-3 md:col-span-2">
             <div className="flex items-center gap-2">
-              <span className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary via-accent to-indigo-500 p-0.5 flex items-center justify-center shrink-0">
-                <span className="w-full h-full rounded-full bg-card flex items-center justify-center text-[10px] font-black text-foreground">AI</span>
-              </span>
+              <img
+                src="/nativelyai.svg"
+                alt="Interview Coach Logo"
+                className="w-8 h-8 object-contain shrink-0"
+              />
               <span className="font-heading font-black text-sm tracking-tight text-foreground">Interview Coach</span>
             </div>
             <p className="text-xs text-foreground/50 max-w-sm leading-relaxed">

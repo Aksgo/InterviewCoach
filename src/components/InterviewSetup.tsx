@@ -93,7 +93,7 @@ export default function InterviewSetup({ company, role, experienceLevel, intervi
         <input
           id="company"
           className="input"
-          placeholder="e.g. Google, Stripe, Spotify, Amazon"
+          placeholder="e.g. Amazon, Google, NVIDIA, Oracle"
           value={company}
           onChange={(e) => handleCompanyChange(e.target.value)}
         />

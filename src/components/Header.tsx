@@ -12,11 +12,13 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 bg-card/90 backdrop-blur-md border-b border-border/80 no-print transition-colors duration-200">
       <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-          <div className="w-9 h-9 rounded-lg bg-accent flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-white" />
-          </div>
-          <span className="font-heading font-bold text-lg text-foreground">
+        <Link to="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
+          <img
+            src="/nativelyai.svg"
+            alt="Interview Coach Logo"
+            className="w-9 h-9 object-contain shrink-0"
+          />
+          <span className="font-heading font-bold text-lg text-foreground tracking-tight">
             Interview Coach
           </span>
         </Link>
@@ -38,36 +40,30 @@ export default function Header() {
           {/* AI Active Status Button */}
           <button
             onClick={() => setIsModalOpen(true)}
-            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 cursor-pointer ${
+            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 cursor-pointer shadow-xs ${
               isProcessing
-                ? "bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900 shadow-sm animate-pulse"
-                : isQuotaExceeded
-                ? "bg-amber-50 text-amber-900 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900 hover:bg-amber-100/90 dark:hover:bg-amber-950/60"
-                : "bg-emerald-50/80 text-emerald-800 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900/60 hover:bg-emerald-100/80 hover:border-emerald-300 dark:hover:bg-emerald-950/50"
+                ? "bg-blue-100/90 text-blue-950 border-blue-300 dark:bg-blue-950/60 dark:text-blue-200 dark:border-blue-800 animate-pulse"
+                : "bg-emerald-100/90 text-emerald-950 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-200 dark:border-emerald-800 hover:bg-emerald-200/80 hover:border-emerald-400 dark:hover:bg-emerald-900/60"
             }`}
-            title="Click to view AI Engine Status, models, and real-time activity"
+            title="Click to view AI Agent status"
           >
             {isProcessing ? (
               <>
-                <Loader2 className="w-3.5 h-3.5 text-blue-600 animate-spin" />
-                <span className="hidden sm:inline font-bold">AI Active:</span>
+                <Loader2 className="w-3.5 h-3.5 text-blue-700 dark:text-blue-300 animate-spin" />
+                <span className="hidden sm:inline font-bold">AI Agent:</span>
                 <span className="max-w-[120px] sm:max-w-[160px] truncate">
-                  {currentTask || "Processing..."}
+                  {currentTask || "Active"}
                 </span>
-              </>
-            ) : isQuotaExceeded ? (
-              <>
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
-                <span>AI Status: <strong className="text-amber-950 font-bold">Rate Limited (Local Mode)</strong></span>
               </>
             ) : (
               <>
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600 dark:bg-emerald-400"></span>
                 </span>
-                <Cpu className="w-3.5 h-3.5 text-emerald-600" />
-                <span>AI Status: <strong className="text-emerald-900">Gemini Live</strong></span>
+                <span className="text-emerald-950 dark:text-emerald-200 font-semibold">
+                  AI Agent: <strong className="text-emerald-700 dark:text-emerald-400 font-extrabold">Live</strong>
+                </span>
               </>
             )}
           </button>

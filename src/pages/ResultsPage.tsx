@@ -75,7 +75,7 @@ export default function ResultsPage() {
       {/* Overall Interview Performance Scorecard */}
       <section className="animate-slide-up">
         <h2 className="text-lg font-bold text-foreground mb-3">Interview Delivery Scores</h2>
-        <EvaluationScorecard scores={session.scores} />
+        <EvaluationScorecard scores={session.scores} questions={session.questions} />
       </section>
 
       {/* AI Processing Cost Ledger */}

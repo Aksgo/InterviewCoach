@@ -1,8 +1,10 @@
-import type { ScoreData } from "../utils/storage";
+import type { ScoreData, InterviewQuestion } from "../utils/storage";
 import { AlertTriangle, TrendingUp, Sparkles, FileText } from "lucide-react";
+import PerformanceCharts from "./PerformanceCharts";
 
 interface EvaluationScorecardProps {
   scores: ScoreData;
+  questions?: InterviewQuestion[];
 }
 
 const dimensions: { key: "relevance" | "clarity" | "depth" | "confidence"; label: string; description: string; color: string }[] = [
@@ -39,7 +41,7 @@ function ScoreRing({ value, color }: { value: number; color: string }) {
   );
 }
 
-export default function EvaluationScorecard({ scores }: EvaluationScorecardProps) {
+export default function EvaluationScorecard({ scores, questions = [] }: EvaluationScorecardProps) {
   return (
     <div className="space-y-6">
       {/* Overall Score */}
@@ -50,6 +52,9 @@ export default function EvaluationScorecard({ scores }: EvaluationScorecardProps
         <p className="text-2xl font-bold text-foreground">{scores.overall}/10</p>
         <p className="text-xs text-foreground/40 uppercase tracking-wider font-semibold">Overall Delivery Score</p>
       </div>
+
+      {/* Recharts Performance Visualization */}
+      <PerformanceCharts scores={scores} questions={questions} />
 
       {/* Dimension Scores */}
       <div className="grid grid-cols-2 gap-3">
